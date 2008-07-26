@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE Simulator [
+<!ELEMENT Simulator (SimulationConfig, SimulationLayer,SimulationNetwork)>
+
+<!ELEMENT SimulationConfig (server,clock,duration)>
+<!ATTLIST server
+		  ip CDATA #REQUIRED
+		  port CDATA #REQUIRED
+		  timeout CDATA #REQUIRED
+		  queue   CDATA #REQUIRED>
+
+<!ELEMENT clock (#PCDATA)>
+<!ELEMENT duration (#PCDATA)>
+
+
+<!ELEMENT SimulationLayer (name,class)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT class (#PCDATA)>
+
+
+<!ELEMENT SimulationNetwork (global-config,custom-config?)>
+<!ATTLIST SimulationNetwork
+		  size CDATA #REQUIRED
+		  mode (manual | auto) "auto">
+
+<!ELEMENT global-config (node-configIn,node-configOut,node-transmissionDefaults,mobility-pattern)>
+<!ELEMENT custom-config (node+)>
+<!ELEMENT node-configIn (#PCDATA)>
+
+<!ELEMENT node-configOut (#PCDATA)>
+<!ATTLIST node-transmissionDefaults
+		  range CDATA #REQUIRED
+		  quality CDATA #REQUIRED>
+
+<!ELEMENT mobility-pattern (#PCDATA)>
+<!ATTLIST mobility-pattern
+		  timeUnit CDATA #REQUIRED>
+
+<!ELEMENT node (node-configIn?,node-configOut?,node-schedule?)>		  
+<!ATTLIST node
+		  id CDATA #IMPLIED
+		  range CDATA #IMPLIED
+		  quality CDATA #IMPLIED
+		  >
+
+<!ELEMENT node-schedule (off+,on+)>
+<!ELEMENT node-schedule 
+		  scaleBy CDATA #REQUIRED>
+<!ATTLIST off
+		  atTime CDATA #REQUIRED>
+<!ATTLIST on
+		  atTime CDATA #REQUIRED>		  
+]>
+
+<Simulator>	 
+	 <SimulationConfig>
+	   <server ip="127.0.0.1" port="7666" timeout="20000" queue="20"/>	   
+	   <clock>1000</clock>
+	   <duration>1200000</duration>
+	 </SimulationConfig>
+	 
+	 <SimulationLayer>
+      	<name>SimulationLayer</name>
+      	<class>ch.epfl.lsr.adhoc.simulator.layer.SimulationLayer</class>
+     </SimulationLayer>
+ 	 
+ 	 <SimulationNetwork size="2" mode="manual/auto">
+ 	   <global-config> 
+	   	   <node-configIn>simulator/sim_franc.xml</node-configIn>
+     	   <node-configOut>simulator/sim_franc_ready.xml</node-configOut> 	   
+ 		   <node-transmissionDefaults range="20" quality="1"/>
+	 	   <mobility-pattern timeUnit=1000>simulator/ns_file.ns</mobility-pattern>
+ 	   <global-config>
+ 	   
+ 	   <custom-config>
+	 	   <node id="1" range="20" quality="1">
+	 	   		<node-configIn>simulator/sim_franc.xml</node-configIn>
+ 		   		<node-configOut>simulator/sim_franc_out1.xml</node-configOut>
+ 		   		<node-schedule scaleBy="1000">
+ 		   			<off atTime="30"/>
+ 		   			<on atTime="50"/>
+ 		   		</node-schedule>	
+ 	   	   </node>
+ 	   
+ 	   	   <node id = "2" range="20" quality="1">
+   	   			<node-configIn>simulator/sim_franc.xml</node-configIn>
+ 		   		<node-configOut>simulator/sim_franc_out2.xml</node-configOut>
+ 		   		<node-schedule scaleBy="1000">
+ 		   			<off atTime="30"/>
+ 		   			<on atTime="50"/>
+ 		   		</node-schedule>	   	   			
+ 	   	   </node> 	   	
+ 	   	</custom-config>
+ 	 </SimulationNetwork>		 
+</Simulator>

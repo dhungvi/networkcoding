@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    How the configuration file has to be written:
+
+     - the first tag has to be franc with two subtags: 
+       messages(not required) and layers.franc has one required attribute, 
+	   the node name. It can be any string, "ip" or "auto".
+     - messages is composed of one or more message tags.
+     - a message has a type (must be unique), a name, a class and a factory 
+	   witch has a name and a class.
+     - the element layers is defined like that :
+	   DataLinkLayer, VirtualNetworks?, ipgateway?, routing, layer*, Dispatcher?, layer*
+	   The first layer defined is the bottom-most in the protocol stack.
+     - all the layers have a name, a class and 0 or more parameters
+     - the dispatcher has the same property than the other layers but if it is defined
+       it must have at least one service.
+     - The services tags is composed of one or more services witch have a name, a class 
+	   and 0 or more parametres
+     - the type, the class and  the name are composed of data without space
+     - the parameter is composed of data and has an attribute: its name 
+     
+-->
+
+<!DOCTYPE franc SYSTEM "franc.dtd">
+<franc name="auto">
+  <messages>
+    <message>
+      <type>5</type>
+      <name>Hello</name>
+      <class>ch.epfl.lsr.adhoc.services.neighboring.HelloMsg</class>
+      <messageFactory>
+        <name>HelloMsgFactory</name>
+        <class>ch.epfl.lsr.adhoc.services.neighboring.HelloMsgFactory</class>
+      </messageFactory>
+    </message>
+    <message>
+      <type>32</type>
+      <name>Text</name>
+      <class>ch.epfl.lsr.adhoc.chat.TextMessage</class>
+      <messageFactory>
+        <name>TextFactory</name>
+        <class>ch.epfl.lsr.adhoc.chat.TextMessageFactory</class>
+      </messageFactory>
+    </message>
+    <message>
+      <type>62</type>
+      <name>NCode</name>
+      <class>ch.epfl.lsr.adhoc.routing.ncode.NCodeMessage</class>
+      <messageFactory>
+        <name>NCodeMessageFactory</name>
+        <class>ch.epfl.lsr.adhoc.routing.ncode.NCodeMessageFactory</class>
+      </messageFactory>
+    </message>
+    <message>
+      <type>61</type>
+      <name>NCodeFB</name>
+      <class>ch.epfl.lsr.adhoc.routing.ncode.feedback.NCodeFBMessage</class>
+      <messageFactory>
+        <name>NCodeMessageFBFactory</name>
+        <class>ch.epfl.lsr.adhoc.routing.ncode.feedback.NCodeFBMessageFactory</class>
+      </messageFactory>
+    </message>
+  </messages>
+  <layers>
+    <DataLinkLayer>
+      <name>AsyncMulticast</name>
+      <class>ch.epfl.lsr.adhoc.runtime.AsyncMulticast</class>
+      <param name="multicastgroup">228.5.6.7</param>
+      <param name="port">6789</param>
+      <param name="maxBufferSize">1000</param>
+<param name="daemon">false</param>
+<!--param name="networkInterface">Put some IP-Address here</param-->
+    </DataLinkLayer>
+<!--VirtualNetworks>
+			<name>VirtualNetworks</name>
+      	<class>ch.epfl.lsr.adhoc.runtime.VirtualNetworksLayer</class>
+      	<param name="the number name of the subnetwork">put a number of subnetwork like above</param>
+      	<param name="2">50</param>
+			<param name="1">100</param>
+      </VirtualNetworks-->
+<!--ipgateway>
+			<name>IPGateway</name>
+			<class>ch.epfl.lsr.adhoc.ipgatewaylayer.IPG</class>
+			<param name="nextgateway">128.178.73.43</param>
+			<param name="WANInterface">eth0</param>
+		</ipgateway-->
+    <routing>
+      <!--name>LocalRouting</name>
+      <class>ch.epfl.lsr.adhoc.routing.localrouting.LocalRouting</class-->
+<!--name>Flooding</name>
+			<class>ch.epfl.lsr.adhoc.routing.flooding.Flooding</class>
+			<param  name="bufferLength">100</param>	
+			<param  name="probaRetransmit">100</param>
+			<param  name="delayMax">250</param-->
+    <name>NCode</name>
+	<class>ch.epfl.lsr.adhoc.routing.ncode.Ncode</class>
+		<param name="msgType">NCode</param>
+		<param  name="bufferLength">100</param>	
+		<param  name="probaRetransmit">100</param>
+		<param  name="delayMax">100</param>
+		<param  name="MaximumDataUnit">1000</param>
+		<param  name="MaximumCLU">10</param>
+		<param  name="HCL">10</param>	
+    <!--name>NCodeFB</name>
+	<class>ch.epfl.lsr.adhoc.routing.ncode.feedback.NcodeFB</class>
+		<param name="msgType">NCode</param>
+                <param name="msgTypeFB">NCodeFB</param>
+		<param  name="bufferLength">100</param>	
+		<param  name="probaRetransmit">100</param>
+		<param  name="delayMax">2500</param>
+		<param  name="MaximumDataUnit">200</param>
+		<param  name="MaximumCLU">10</param>
+		<param  name="HCL">10</param-->		
+	
+    </routing>
+    <!--Dispatcher>
+      <name>Dispatcher</name>
+      <class>ch.epfl.lsr.adhoc.runtime.Dispatcher</class>
+      <services>
+        <service>
+          <name>Neighboring</name>
+          <class>ch.epfl.lsr.adhoc.services.neighboring.NeighborService</class>
+          <param name="msgType">Hello</param>
+          <param name="entryExp">10</param>
+          <param name="HelloInterval">100</param>
+        </service>
+      </services>
+    </Dispatcher-->
+    <!--layer>
+      <name>Debug</name>
+      <class>ch.epfl.lsr.adhoc.tools.DebugLayer</class>
+      <param name="msgType">Debug</param>    
+    </layer-->
+
+    <layer>
+      <name>Chat</name>
+      <class>ch.epfl.lsr.adhoc.chat.Chat</class>
+      <param name="ttl">16</param>
+      <param name="msgType">Text</param>
+      <!--name>AutoChat</name>
+      <class>ch.epfl.lsr.adhoc.autochat.AutoChat</class>
+      <param name="ttl">16</param>
+      <param name="msgType">Text</param>
+      <param name="UserInterface">on</param>
+      <param name="delayMax">1</param-->
+    </layer>
+    <layer>
+      <name>AbsorbingLayer</name>
+      <class>ch.epfl.lsr.adhoc.runtime.AbsorbingLayer</class>
+      <param name="output">true</param>
+    </layer>
+  </layers>
+</franc>

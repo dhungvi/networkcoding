@@ -1,0 +1,47 @@
+
+
+<!-- 
+  Document Type Definition (DTD) for FRANC's XML configuration file.
+ -->
+
+
+
+<!ELEMENT franc (messages?, layers)>
+<!ATTLIST franc  name  CDATA #REQUIRED>
+
+
+<!ELEMENT messages (message+)>
+
+
+<!ELEMENT message (type, name, class, messageFactory)>
+<!ELEMENT messageFactory (name, class)>
+
+
+<!ELEMENT layers (DataLinkLayer, VirtualNetworks?, ipgateway?, routing, layer*, Dispatcher?, layer*)>
+
+
+<!ELEMENT DataLinkLayer (name, class, param*)>
+<!ELEMENT VirtualNetworks (name, class, param*)>
+<!ELEMENT routing (name, class, param*)>
+<!ELEMENT layer (name, class, param*)>
+<!ELEMENT ipgateway (name, class, param*)>
+
+
+<!ELEMENT Dispatcher (name, class, param*, services+)>
+
+
+<!ELEMENT services (service+)>
+<!ELEMENT service (name, class, param*)>
+
+
+
+
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT class  (#PCDATA)>
+<!ELEMENT name  (#PCDATA)>
+
+
+<!ELEMENT param (#PCDATA)>
+<!ATTLIST param  name  CDATA #REQUIRED>
+
+

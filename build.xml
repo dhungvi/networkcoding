@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<project name="franc" default="dist" basedir=".">
+  <description>
+        Franc build file
+  </description>
+  <property name="src" location="ch"/>
+  <property name="build" location="classes"/>
+  <property name="dist" location="jars"/>
+  <property name="sim" location="simulator"/>
+  <property name="lib" location="lib"/>
+  <property name="javadoc" location="doc/javadoc"/>
+  <property name="target" value="1.2"/>
+  <property name="encoding" value="iso-8859-1"/>
+  <property name="jssimwrapper.src" value="${lib}/src"/>
+<!-- Configurable parameters -->
+  <property name="jist.dir" value="../jist-swans-1.0.6"/>
+  <property name="jist.build" value="${jist.dir}/jist.jar"/>
+  <property name="swans.build" value="${jist.dir}/swans.jar"/>
+  <property name="tmp" value="/tmp"/>
+<!--*************************-->
+<!-- Path contains the compilation libraries needed for the framework -->
+  <path id="classpath">
+    <pathelement location="${build}"/>
+    <pathelement location="${lib}/touchgraph.jar"/>
+    <pathelement location="${lib}/jssimwrapper.jar"/>
+    <pathelement location="${lib}/jargs.jar"/>
+    <pathelement location="${swans.build}"/>
+    <pathelement location="${jist.build}"/>
+    <pathelement location="${lib}/log4j-1.2.8.jar"/>
+    <!--pathelement location="${jist.dir}/libs/log4j.jar"/-->
+    <pathelement location="${jist.dir}/libs/jargs.jar"/>
+    <pathelement location="${jist.dir}/libs/bcel.jar"/>
+<!--pathelement location="${lib}/jdom.jar"/-->
+<!--pathelement location="${lib}/xercesImpl.jar"/-->
+<!--pathelement location="${lib}/xml-apis.jar"/-->
+  </path>
+  <target name="init" description="Initialize build directory">
+    <mkdir dir="${build}"/>
+  </target>
+  <target name="compile" depends="init" description="compile the sources">
+    <javac target="${target}" source="${target}" encoding="${encoding}" destdir="${build}" excludes="epfl/lsr/adhoc/simulator/**" debug="on" deprecation="on">
+      <classpath refid="classpath"/>
+      <src path="${src}"/>
+    </javac>
+  </target>
+  <target name="dist" depends="compile" description="generate the distribution">
+    <mkdir dir="${dist}"/>
+    <jar jarfile="${dist}/franc.jar" basedir="${build}"/>
+  </target>
+  <target name="clean" description="clean up">
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+  </target>
+  <target name="javadoc" description="Generates javadoc">
+    <untar compression="gzip" src="${javadoc}/touchgraph.tgz" dest="${javadoc}"/>
+    <javadoc packagenames="ch.epfl.lsr.adhoc.*" sourcepath="." classpath="${classpath}" access="public" verbose="false" defaultexcludes="yes" destdir="${javadoc}/franc" author="true" version="true" use="true" encoding="${encoding}" windowtitle="FRANC API">
+      <doctitle><![CDATA[<h1>FRANC : Framework for Ad-hoc Communication</h1>]]></doctitle>
+      <bottom><![CDATA[<center><i><a href="http://lsrwww.epfl.ch" 
+							  target="_new">Distributed Systems Laboratory</a>, 
+							  <a href="http://www.epfl.ch" target="_new">EPFL</a>,
+							  2004</i></center>]]></bottom>
+      <link offline="false" href="http://java.sun.com/j2se/1.4.1/docs/api"/>
+    </javadoc>
+  </target>
+  <target name="go" description="Starts FRANC">
+    <property environment="env"/>
+    <java classname="ch.epfl.lsr.adhoc.runtime.Main" fork="true">
+      <classpath refid="classpath"/>
+      <arg value="franc.xml"/>
+<!--arg value="${env.HOSTNAME}"/-->
+    </java>
+  </target>
+<!-- Starts the simulation mode of the MANET framework -->
+  <target name="simulation" depends="compile" description="Compile for simulation">
+    <property environment="env"/>
+    <unjar src="${lib}/jdom.jar" dest="${build}"/>
+    <unjar src="${lib}/log4j-1.2.8.jar" dest="${build}"/>
+    <unjar src="${lib}/xercesImpl.jar" dest="${build}"/>
+    <unjar src="${lib}/xml-apis.jar" dest="${build}"/>
+    <jar jarfile="${sim}/MANETSimulation.jar" basedir="${build}" manifest="${sim}/main.config"/>
+  </target>
+  <target name="jssimwrapper" description="(Re-)Compile the wrapper library for Jist/Swans simulator">
+    <mkdir dir="${tmp}/jssimbuild"/>
+    <javac source="${target}" target="${target}" encoding="${encoding}" destdir="${tmp}/jssimbuild" debug="on" deprecation="on">
+      <classpath refid="classpath"/>
+      <src path="${jssimwrapper.src}"/>
+    </javac>
+    <jar jarfile="${lib}/jssimwrapper.jar" basedir="${tmp}/jssimbuild"/>
+    <delete dir="${tmp}/jssimbuild"/>
+  </target>
+  <target name="jssim" description="Starts FRANC in simulation mode">
+    <java classname="jist.runtime.Main" fork="true">
+      <env key="LD_LIBRARY_PATH" value="${LD_LIBRARY_PATH}:${jist.dir}/src/jist/swans/misc"/>
+      <classpath refid="classpath"/>
+      <arg value="ch.epfl.lsr.adhoc.runtime.Main"/>
+      <arg value="-sim"/>
+      <arg value="js.xml"/>
+      <jvmarg value="-Xmx200m"/>
+    </java>
+  </target>
+<!-- Cleans the simulation environment -->
+  <target name="simulation cleanup" depends="clean" description="simulator clean up">
+    <delete file="${sim}/MANETSimulation.jar"/>
+    <delete>
+      <fileset dir="${sim}" includes="**/*.log*"/>
+    </delete>
+  </target>
+</project>

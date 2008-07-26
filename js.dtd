@@ -1,0 +1,66 @@
+<!ELEMENT simulation (CommonParameters, NodeModels, Orders)>
+	<!ELEMENT CommonParameters (FieldLayer)>		
+		<!ELEMENT FieldLayer (spatial?, fading?, pathloss?, propagationlimit?, mobility?)>
+		<!ATTLIST FieldLayer fieldlength CDATA #REQUIRED>
+		<!ATTLIST FieldLayer fieldwidth CDATA #REQUIRED>
+			<!ELEMENT spatial (#PCDATA)>
+			<!ELEMENT fading (#PCDATA)>
+			<!ELEMENT pathloss (#PCDATA)>
+			<!ELEMENT propagationlimit (#PCDATA)>
+			<!ELEMENT mobility (fixedradius?, randomradius?, pausetime?, minspeed?, maxspeed?, precision?)>
+			<!ATTLIST mobility mobilitymodel (randomwalk | randomwaypoint | static) "static">
+				<!ELEMENT fixedradius (#PCDATA)> <!-- double -->
+				<!ELEMENT randomradius (#PCDATA)> <!-- double -->
+				<!ELEMENT pausetime (#PCDATA)> <!-- long -->
+				<!ELEMENT minspeed (#PCDATA)> <!-- float -->
+				<!ELEMENT maxspeed (#PCDATA)> <!-- float -->
+				<!ELEMENT precision (#PCDATA)> <!-- float -->
+
+	<!-- NODE MODEL DEFINITION -->
+	<!ELEMENT NodeModels (NodeModel+)>
+		<!ELEMENT NodeModel (FrancStack, Position?, RadioLayer?, MacLayer?, NetLayer?)>
+		<!ATTLIST NodeModel  id  CDATA #REQUIRED>
+
+			<!-- LAYERS DEFINITION -->
+			<!ELEMENT Position (posx?, posy?)>
+			<!ATTLIST Position positiontype (deterministic | random) "random">
+				<!ELEMENT posx (#PCDATA)>
+				<!ELEMENT posy (#PCDATA)>
+				
+			<!-- LINK WITH THE FRANC STACK MODEL -->
+			<!ELEMENT FrancStack (#PCDATA)>
+
+			<!-- RADIO LAYER DEFINITION -->
+			<!ELEMENT RadioLayer (radiomodel, frequency?, bandwidth?, transmitpower?, antennagain?, 
+				sensitivity_mW?, threshold_mW?, fieldtemperature_K?, thermalFactor?,
+				ambientNoise_mW?, SNRThreshold?)>
+				<!ELEMENT radiomodel (#PCDATA)> <!-- String -->
+				<!ELEMENT frequency (#PCDATA)> <!-- double -->
+				<!ELEMENT bandwidth (#PCDATA)> <!-- int -->
+				<!ELEMENT transmitpower (#PCDATA)> <!-- double -->
+				<!ELEMENT antennagain (#PCDATA)> <!-- double -->
+				<!ELEMENT sensitivity_mW (#PCDATA)> <!-- double -->
+				<!ELEMENT threshold_mW (#PCDATA)> <!-- double -->
+				<!ELEMENT fieldtemperature_K (#PCDATA)> <!-- double -->
+				<!ELEMENT thermalfactor (#PCDATA)> <!-- double -->
+				<!ELEMENT ambientnoise_mW (#PCDATA)> <!-- double -->
+				<!ELEMENT SNRthreshold (#PCDATA)> <!-- double -->
+
+			<!-- MAC LAYER DEFINITION -->
+			<!ELEMENT MacLayer (macmodel, MacAddress?)>
+				<!ELEMENT macmodel (#PCDATA)> <!-- dumb or 802_11 (All Strings) -->
+				<!ELEMENT MacAddress (#PCDATA)> <!-- String -->
+
+			<!-- NET LAYER DEFINITION -->
+			<!ELEMENT NetLayer (netaddress?, packetlossin?, packetlossout?)>
+				<!ELEMENT netaddress (#PCDATA)>
+				<!ELEMENT packetlossin (#PCDATA)> <!-- should be "uniform" or "zero" -->
+				<!ELEMENT packetlossout (#PCDATA)>
+	<!-- END OF LAYER DEFINITION -->
+
+	<!-- ORDERS DEFINITION -->
+	<!ELEMENT Orders (Order+)>
+		<!ELEMENT Order (orderedmodel, qtity)>
+			<!ELEMENT orderedmodel (#PCDATA)>
+			<!ELEMENT qtity (#PCDATA)>
+	<!-- END OF ORDERS DEFINITION -->

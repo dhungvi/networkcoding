@@ -1,0 +1,407 @@
+package simjistwrapper.utils.simstruct;
+
+import ch.epfl.lsr.adhoc.runtime.AsynchronousLayer;
+import ch.epfl.lsr.adhoc.runtime.Parameters;
+import ch.epfl.lsr.adhoc.runtime.ParamDoesNotExistException;
+import ch.epfl.lsr.adhoc.chat.TextMessage;
+import ch.epfl.lsr.adhoc.runtime.MessagePool;
+import ch.epfl.lsr.adhoc.runtime.UnknownMessageTypeException;
+import ch.epfl.lsr.adhoc.runtime.FrancRuntime;
+import ch.epfl.lsr.adhoc.runtime.RuntimeInterface;
+import ch.epfl.lsr.adhoc.runtime.SendMessageFailedException;
+import java.util.ArrayList;
+import java.nio.ByteBuffer;
+import jist.runtime.JistAPI;
+import jist.swans.Constants;
+import jist.swans.app.*;
+import jist.swans.trans.*;
+import jist.swans.net.NetInterface;
+import jist.swans.net.NetAddress;
+import jist.swans.net.NetMessage;
+import jist.swans.mac.MacAddress;
+import jist.swans.misc.*;
+import simjistwrapper.exceptions.*;
+import simjistwrapper.utils.realstruct.*;
+
+public class JSNode implements AppInterface, AppInterface.UdpApp,
+		NetInterface.NetHandler, IJSNode
+{
+	private Object self;
+
+	private NetInterface netEntity;
+
+	private TransInterface.TransUdpInterface udp;
+
+	private int id;
+
+	private NestedAsyncBroadcast datalinkLayer;
+
+  private ConsoTab rcvBuffer;
+
+	private String francFileName;
+	
+	private int maxSize;
+	private final int longSize = 8;
+	private byte msgBytes[];
+	private byte timeBytes[];
+	private byte dataBytes[];
+	
+	public JSNode(int id, float x, float y, String francFileName)
+	{
+		this.id = id;
+		this.francFileName = francFileName;
+		this.self = JistAPI.proxyMany(this, new Class[] { AppInterface.class,
+				AppInterface.UdpApp.class, NetInterface.NetHandler.class,
+				IJSNode.class });
+	}
+	
+    /*
+	public void helloPrinter()
+	{
+		JistAPI.sleep(1 * Constants.MILLI_SECOND);
+		try
+		{
+			Thread.sleep(1);
+		} catch (InterruptedException e)
+		{
+			e.printStackTrace();
+		}
+		((IJSNode)self).helloPrinter();
+	}
+    */
+
+	public void send(byte[] msgBytes, int length)
+	{		
+		JistAPI
+				.sleep((long) (1000 * jist.swans.Constants.random.nextFloat() * jist.swans.Constants.MICRO_SECOND));
+		Message msg = new MessageBytes(msgBytes, 0, length);
+
+        //System.out.println("Msg to be sent on the Jist network : " + msg.toString());
+        /*
+         NetMessage.Ip netMsg = new NetMessage.Ip(msg, new NetAddress(id),
+			NetAddress.ANY, jist.swans.Constants.NET_PROTOCOL_HEARTBEAT,
+			jist.swans.Constants.NET_PRIORITY_NORMAL,
+			jist.swans.Constants.TTL_DEFAULT);
+        */
+        NetMessage.Ip netMsg = new NetMessage.Ip(msg, new NetAddress(id),
+                NetAddress.ANY, jist.swans.Constants.NET_PROTOCOL_UDP,
+                jist.swans.Constants.NET_PRIORITY_NORMAL,
+                jist.swans.Constants.TTL_DEFAULT);
+        
+        netEntity.send(netMsg, jist.swans.Constants.NET_INTERFACE_DEFAULT,
+				MacAddress.ANY);
+        /*
+		System.out
+				.println("***** Message has been sent through the NET layer at "
+						+ JistAPI.getTime());
+        */
+	}
+
+	// ****
+	// AppInterface Methods
+	// ****
+	public void run()
+	{
+		this.run(null);
+	}
+
+	public void run(String[] args)
+	{
+		datalinkLayer = new NestedAsyncBroadcast("Jist/Swans Datalink Layer", (IJSNode) self);
+		//rcvBuffer = new Buffer();
+        rcvBuffer = new ConsoTab();
+		datalinkLayer.setRcvBuffer(rcvBuffer);
+		
+		SubConfig subConfig = new SubConfig(francFileName);
+		subConfig.setJsNode(this);
+		subConfig.loadConfig();
+		RuntimeInterface runtime = subConfig.createRuntime();
+		runtime.initialize();
+		
+		maxSize = datalinkLayer.getMaxSize();
+		msgBytes = new byte[maxSize + longSize];
+		timeBytes = new byte[longSize];
+		dataBytes = new byte[maxSize];
+		
+		runtime.startup();
+		
+		//((IJSNode)self).helloPrinter();
+	}
+
+	public AppInterface getAppProxy()
+	{
+		return (AppInterface) self;
+	}
+	
+	public IJSNode getNodeProxy()
+	{
+		return (IJSNode) self;
+	}
+
+	// ****
+	// AppInterface.UdpApp
+	// ****
+	public TransInterface.TransUdpInterface getUdpEntity()
+	{
+		return udp;
+	}
+
+	public void setUdpEntity(TransInterface.TransUdpInterface udp)
+	{
+		this.udp = udp;
+	}
+
+	// ****
+	// NetInterface.NetHandler
+	// ****
+	public void receive(Message msg, NetAddress src, MacAddress lastHop,
+			byte macId, NetAddress dst, byte priority, byte ttl)
+	{
+		/*
+		System.out
+				.println("##### Message has been received from the NET layer");
+                */
+		// put the received msg into a Buffer so it can be read by the
+		// AsnycLayer
+		
+		msg.getBytes(msgBytes, 0);
+		int length = msg.getSize();
+		
+		System.arraycopy(msgBytes, 0, timeBytes, 0, 8);
+		System.arraycopy(msgBytes, 8, dataBytes, 0, length - 8);
+		
+		ByteBuffer timeBytesBuffer = ByteBuffer.allocate(8);
+		timeBytesBuffer.put(timeBytes);
+		long time = timeBytesBuffer.getLong(0);
+		long now = JistAPI.getTime();
+		long transmissionTime = now - time;
+        /*
+		System.out.println("<---");
+		System.out
+				.println("<" + src.toString() + " -> " + dst.toString() + ">");
+		System.out.println("My id is : " + id);
+		System.out.println("MESSAGE RECEIVED AT : " + now);
+		System.out.println("TRANSMISSION TIME : " + transmissionTime);
+		System.out.println("--->");
+		*/
+		//rcvBuffer.add(dataBytes);
+        
+        // TODO we are creating a lot of msgs here ! -> Pool ?
+        long consoTime = System.currentTimeMillis() + transmissionTime / Constants.MILLI_SECOND;
+        rcvBuffer.put(new TimeMsg(consoTime, dataBytes));
+	}
+
+	public void setNetEntity(NetInterface netEntity)
+	{
+		this.netEntity = netEntity;
+	}
+
+	public NetInterface.NetHandler getNetProxy()
+	{
+		return (NetInterface.NetHandler) self;
+	}
+
+	public NetAddress getNetAddr()
+	{
+		return netEntity.getAddress();
+	}
+
+	public int getId()
+	{
+		return id;
+	}
+
+	public JSNode.NestedAsyncBroadcast getDatalinkLayer()// throws SimRuntimeException
+	{
+		if (datalinkLayer == null)
+			throw new RuntimeException("datalink Layer is null");
+		else
+			return datalinkLayer;
+	}
+
+	class NestedAsyncBroadcast extends AsynchronousLayer
+	{
+		private FrancRuntime runtime;
+
+		private MessagePool messagePool;
+
+		private int maxSize;
+
+		private byte[] dataBuf;
+		
+		private byte[] bufTX;
+
+		private byte[] bufRX;
+
+		private long nodeID;
+
+		private int seqNumber = 0;
+
+    private ConsoTab rcvBuffer;
+		
+		private IJSNode proxy;
+		
+		private int longSize = 8;
+
+    private Parameters params;
+		
+		/*public NestedAsyncBroadcast(String name, Parameters params)
+		{
+			super(name,params);
+      this.params = params;
+		}*/
+		
+		public NestedAsyncBroadcast(String name, IJSNode jsNode)
+		{
+        super(name,null);
+			  this.proxy = jsNode;
+		}
+
+    protected void setParameters(Parameters params) {
+        this.params  = params;
+    }
+
+		public void initialize(FrancRuntime runtime)
+		{
+            /*
+			System.out
+					.println("--> call to AsyncBroadcast.initialize(FrancRuntime)");
+					*/
+			this.runtime = runtime;
+			this.messagePool = runtime.getMessagePool();
+			
+			try
+			{
+				maxSize = params.getInt("maxBufferSize");
+			} catch (ParamDoesNotExistException pdnee)
+			{
+				throw new RuntimeException(new SemanticException(
+						"Error reading max rcvBuffer size configuration parameter: "
+								+ pdnee.getMessage(), pdnee));
+			}
+
+			dataBuf = new byte[maxSize];
+			
+			bufTX = new byte[maxSize + longSize];
+			bufRX = new byte[maxSize];
+		}
+
+		public void startup()
+		{
+			nodeID = runtime.getNodeID();
+			start();
+		}
+
+		protected ch.epfl.lsr.adhoc.runtime.Message getNetworkMessage()
+		{
+			//bufRX = (byte[]) rcvBuffer.remove();
+            TimeMsg timeMsg = rcvBuffer.getFirst();
+            /*
+            System.out.println("consoTime : " + timeMsg.getConsoTime()
+                    + "\nactual time : " + System.currentTimeMillis());
+                    */
+            bufRX = timeMsg.getMsg();
+
+			if (bufRX != null)
+			{
+				try
+				{
+					ch.epfl.lsr.adhoc.runtime.Message msg = messagePool
+							.createMessage(bufRX, (short) maxSize);
+                    /*
+					try
+					{
+						System.out.println("MSG RCVD : "
+								+ ((TextMessage) msg).getText());
+					} catch (ClassCastException e)
+					{
+						System.out.println("HELLO MSG RCVD");
+					}
+*/
+					return msg;
+				} catch (UnknownMessageTypeException umte)
+				{
+					throw new RuntimeException(new SemanticException(
+							">>> Unknown Message type: "
+									+ ((int) umte.getUnknownType()), umte));
+				}
+			}
+			return null;
+		}
+
+		public synchronized int sendMessage(ch.epfl.lsr.adhoc.runtime.Message msg)
+				throws SendMessageFailedException
+		{
+            /*
+			System.out
+					.println("--> call to AsyncBroadcast.sendMessage(Message)");
+
+			try
+			{
+				System.out.println("MSG SENT : "
+						+ ((TextMessage) msg).getText());
+			} catch (ClassCastException e)
+			{
+				System.out.println("HELLO MSG SENT");
+			}
+            */
+            
+			int dataLength = 0;
+			if (msg == null)
+				throw new SendMessageFailedException("The message cannot be null");
+			else
+			{
+				// only set the source node and sequence number when not already
+				// set
+				// this is because the routing layer may resend a message
+				// without it
+				// being changed (i.e. the source node should be the one of the
+				// original node)
+				if (msg.getNextHop() == -1)
+					throw new SendMessageFailedException("Next hop not defined in: "+msg);
+				if (msg.getDstNode() == -1)
+					throw new SendMessageFailedException("Destination not defined in: "+msg);
+				if (msg.getSrcNode() == -1 || msg.getSrcNode() == nodeID)
+				{
+					msg.setSrcNode(nodeID);
+					msg.setSequenceNumber(seqNumber);
+					seqNumber = ((seqNumber + 1) & 0xFFFF);
+				}
+				msg.setPreviousHop(nodeID);
+				// this updates the dataBuf to be transmitted
+				
+				dataLength = msg.getByteArray(dataBuf);
+				
+				long time = JistAPI.getTime();
+				byte timeBytes[] = new byte[8];
+				
+				ByteBuffer timeBytesBuffer = ByteBuffer.allocate(8);
+				timeBytesBuffer.putLong(time);
+				timeBytes = timeBytesBuffer.array();
+				
+				System.arraycopy(timeBytes, 0, bufTX, 0, 8);
+				System.arraycopy(dataBuf, 0, bufTX, 8, dataLength);
+				
+				proxy.send(bufTX, dataLength + 8);
+			}
+			messagePool.freeMessage(msg);
+			return dataLength;
+		}
+
+		public int getMaxSize()
+		{
+			return maxSize;
+		}
+		
+        /*
+		public void setRcvBuffer(Buffer rcvBuffer)
+		{
+			this.rcvBuffer = rcvBuffer;
+		}
+        */
+        public void setRcvBuffer(ConsoTab rcvBuffer)
+        {
+            this.rcvBuffer = rcvBuffer;
+        }
+	} // class NestedBroadcast
+}

@@ -1,0 +1,39 @@
+/*
+ * Created on Oct 31, 2005
+ *
+ */
+package simjistwrapper.utils.simstruct;
+
+import ch.epfl.lsr.adhoc.runtime.AsynchronousLayer;
+import ch.epfl.lsr.adhoc.runtime.Config;
+
+public class SubConfig extends Config //implements ConfigInterface
+{
+    private JSNode jsNode;
+    
+    public SubConfig(String francFileName)
+    {
+        super(francFileName);
+    }
+    
+    public AsynchronousLayer createDataLinkLayer()
+    {
+        // TODO put the two lines underneath in one line (all in the constructor ?)
+        // AsynchronousLayer datalink = new AsyncBroadcast("datalink layer");
+        //((AsyncBroadcast)(datalink)).setConfig(this);
+    	if(jsNode == null)
+    		throw new RuntimeException("jsNode is null (in SubConfig)");
+        return jsNode.getDatalinkLayer();
+    }
+    
+    protected void loadconfig() {
+        super.loadConfig();
+    }
+	public void setJsNode(JSNode jsNode)
+	{
+		System.out.println("--> call to SubConfig.setJsNode()");
+		if(jsNode == null)
+			throw new RuntimeException("jsNode is null (in SubConfig.set)");
+		this.jsNode = jsNode;
+	}
+}
