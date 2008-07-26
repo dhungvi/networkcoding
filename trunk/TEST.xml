@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Contents  name="jist.runtime.Main at perse [ PID: 5520 ]">
+<Agent name="Java Profiling Agent" type="Profiler" runtimeId="b63fe2e4-74a3-495a-b439-5c0fc2f74edf" startTime="1.147543191621E9" stopTime="0.0" collectionMode="HEAP_AND_EXECUTION_STATISTICS_ONLY">
+<process pid="5520" id="a86a9f3d-2204-452a-aa0e-faeb44d244f5" startTime="0.237898588180542" lastEventTime="0.0" baseTime="2.6877988483422093" cumulativeTime="4.3913031353300624" calls="20000" totalSize="17000" totalInstances="581" classClass="124"/>
+<packages name="java.lang" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="3088" totalInstances="35" collectedSize="0" collectedInstances="0">
+    <classes name="Class" id="124" loadTime="0.24912500381469727" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="2992" totalInstances="34" collectedSize="0" collectedInstances="0" loadedBy="4" sourceInfo="" classObjects="-124 -124 ">
+    </classes>
+    <classes name="Thread" id="616" loadTime="0.2575998306274414" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="96" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="4" sourceInfo="" classObjects="617 617 ">
+    </classes>
+</packages>
+<packages name="java" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="jist.runtime" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="96" totalInstances="1" collectedSize="0" collectedInstances="0">
+    <classes name="Controller$JistThread" id="16605" loadTime="1.0856943130493164" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="96" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Controller.java" classObjects="16606 16606 ">
+    </classes>
+</packages>
+<packages name="jist" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch.epfl.lsr.adhoc.runtime" baseTime="1.9852439916748041" cumulativeTime="2.6877988483422093" calls="156" totalSize="664" totalInstances="20" collectedSize="0" collectedInstances="0">
+    <classes name="Main" id="22449" loadTime="1.4138743877410889" baseTime="1.7229429207025146" cumulativeTime="1.7229696908795167" calls="1" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Main.java" classObjects="22437 22437 ">
+      <methods name="main" id="22447" signature="(java.lang.String[]) void" baseTime="1.7229429207025146" cumulativeTime="1.7229696908795167" calls="1"/>
+    </classes>
+    <classes name="FrancSystem" id="22732" loadTime="1.4384663105010986" baseTime="2.101515075683593E-5" cumulativeTime="2.101515075683593E-5" calls="7" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="FrancSystem.java" classObjects="22733 22733 ">
+      <methods name="FrancSystem" id="22731" signature="()" baseTime="1.5214738769531248E-5" cumulativeTime="1.818036499023437E-5" calls="1"/>
+      <methods name="init" id="22730" signature="() void" baseTime="2.9656262207031253E-6" cumulativeTime="2.9656262207031253E-6" calls="1"/>
+      <methods name="instance" id="22728" signature="() ch.epfl.lsr.adhoc.runtime.FrancSystem" baseTime="2.8347857666015626E-6" cumulativeTime="2.8347857666015626E-6" calls="5"/>
+    </classes>
+    <classes name="AsynchronousLayer" id="42156" loadTime="3.2078802585601807" baseTime="0.015590046577758788" cumulativeTime="0.02775754978820801" calls="9" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="AsynchronousLayer.java" classObjects="42157 42157 ">
+      <methods name="AsynchronousLayer" id="42155" signature="(java.lang.String, ch.epfl.lsr.adhoc.runtime.Parameters)" baseTime="0.015255809792480469" cumulativeTime="0.02742331300292969" calls="4"/>
+      <methods name="setLowerLayer" id="42146" signature="(ch.epfl.lsr.adhoc.runtime.AsynchronousLayer) void" baseTime="3.409939575195327E-6" cumulativeTime="3.409939575195327E-6" calls="3"/>
+      <methods name="toString" id="42153" signature="() java.lang.String" baseTime="3.30826845703125E-4" cumulativeTime="3.30826845703125E-4" calls="2"/>
+    </classes>
+    <classes name="FrancThread" id="42167" loadTime="3.2079501152038574" baseTime="1.362104315185547E-4" cumulativeTime="0.01213045661376953" calls="20" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="FrancThread.java" classObjects="42168 42168 ">
+      <methods name="FrancThread" id="42165" signature="()" baseTime="2.3795803222656246E-5" cumulativeTime="0.01209494155151367" calls="5"/>
+      <methods name="FrancThread" id="42166" signature="(java.lang.Runnable)" baseTime="2.5244133300781252E-5" cumulativeTime="0.012071145748291014" calls="5"/>
+      <methods name="init" id="42163" signature="(java.lang.Runnable) void" baseTime="5.165543273925781E-5" cumulativeTime="0.012045901614990234" calls="5"/>
+      <methods name="setDaemon" id="42162" signature="(boolean) void" baseTime="3.551506225585938E-5" cumulativeTime="3.551506225585938E-5" calls="5"/>
+    </classes>
+    <classes name="Buffer" id="42443" loadTime="3.2348084449768066" baseTime="1.9903271240234372E-4" cumulativeTime="1.9903271240234372E-4" calls="6" totalSize="80" totalInstances="5" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Buffer.java" classObjects="42444 42444 ">
+      <methods name="-clinit-" id="42441" signature="()" baseTime="5.8114819335937495E-6" cumulativeTime="5.8114819335937495E-6" calls="1"/>
+      <methods name="Buffer" id="42442" signature="()" baseTime="1.9322123046874997E-4" cumulativeTime="1.9322123046874997E-4" calls="5"/>
+    </classes>
+    <classes name="Config" id="42785" loadTime="3.283733367919922" baseTime="0.23443165718017578" cumulativeTime="0.36502847290832546" calls="71" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Config.java" classObjects="42786 42786 ">
+      <methods name="Config" id="42784" signature="(java.lang.String)" baseTime="4.6211235595703125E-4" cumulativeTime="4.6211235595703125E-4" calls="1"/>
+      <methods name="loadConfig" id="42783" signature="() void" baseTime="3.69644423828125E-4" cumulativeTime="0.3467446897955325" calls="1"/>
+      <methods name="parseXMLFile" id="42775" signature="(java.io.File) org.w3c.dom.Document" baseTime="0.00792908859008789" cumulativeTime="0.109870472532959" calls="1"/>
+      <methods name="readParameters" id="42774" signature="(org.w3c.dom.Document) void" baseTime="0.0028709684344482424" cumulativeTime="0.2365045728387451" calls="1"/>
+      <methods name="computeNodeID" id="42760" signature="() long" baseTime="0.004163692994384766" cumulativeTime="0.004163692994384766" calls="1"/>
+      <methods name="initializeMessagePool" id="42768" signature="() void" baseTime="0.019508143621826173" cumulativeTime="0.14635155068115233" calls="1"/>
+      <methods name="nodeToElement" id="42766" signature="(org.w3c.dom.Node) org.w3c.dom.Element" baseTime="9.002176086425788E-5" cumulativeTime="9.002176086425788E-5" calls="47"/>
+      <methods name="getMessageFactoryForName" id="42765" signature="(java.lang.String) ch.epfl.lsr.adhoc.runtime.IMessageFactory" baseTime="0.11881922586791992" cumulativeTime="0.11885774976623537" calls="4"/>
+      <methods name="getParameters" id="42776" signature="(org.w3c.dom.Node) ch.epfl.lsr.adhoc.runtime.Parameters" baseTime="0.009990717054443361" cumulativeTime="0.010234983789672853" calls="4"/>
+      <methods name="createVirtualNetworksLayer" id="42773" signature="() ch.epfl.lsr.adhoc.runtime.AsynchronousLayer" baseTime="8.917795776367187E-4" cumulativeTime="8.917795776367187E-4" calls="1"/>
+      <methods name="createIPGatewayLayer" id="42772" signature="() ch.epfl.lsr.adhoc.runtime.AsynchronousLayer" baseTime="0.002597958185424805" cumulativeTime="0.002597958185424805" calls="1"/>
+      <methods name="createRoutingLayer" id="42771" signature="() ch.epfl.lsr.adhoc.runtime.AsynchronousLayer" baseTime="6.320485821533203E-4" cumulativeTime="0.04451735619445801" calls="1"/>
+      <methods name="getAsynchronousLayerForName" id="42764" signature="(java.lang.String, java.lang.String, ch.epfl.lsr.adhoc.runtime.Parameters) ch.epfl.lsr.adhoc.runtime.AsynchronousLayer" baseTime="0.04747863918762207" cumulativeTime="0.0676426701147461" calls="3"/>
+      <methods name="createLayers" id="42770" signature="(org.w3c.dom.Node) ch.epfl.lsr.adhoc.runtime.AsynchronousLayer[]" baseTime="3.0020824462890627E-4" cumulativeTime="0.02594065540161133" calls="1"/>
+      <methods name="createDispatcher" id="42769" signature="() ch.epfl.lsr.adhoc.runtime.Dispatcher" baseTime="8.140619580078125E-4" cumulativeTime="8.140619580078125E-4" calls="1"/>
+      <methods name="createRuntime" id="42782" signature="() ch.epfl.lsr.adhoc.runtime.FrancRuntime" baseTime="0.017512731179199218" cumulativeTime="0.017821055595092773" calls="1"/>
+      <methods name="getNodeID" id="42781" signature="() long" baseTime="6.151617431640621E-7" cumulativeTime="6.151617431640621E-7" calls="1"/>
+    </classes>
+    <classes name="MessagePool" id="44486" loadTime="3.416598081588745" baseTime="0.007931769931030272" cumulativeTime="0.007931769931030272" calls="5" totalSize="40" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="MessagePool.java" classObjects="44487 44487 ">
+      <methods name="MessagePool" id="44485" signature="()" baseTime="0.007873128266601562" cumulativeTime="0.007873128266601562" calls="1"/>
+      <methods name="addMessageFactory" id="44481" signature="(char, ch.epfl.lsr.adhoc.runtime.IMessageFactory, java.lang.String) void" baseTime="5.864166442871093E-5" cumulativeTime="5.864166442871093E-5" calls="4"/>
+    </classes>
+    <classes name="IMessageFactory" id="44579" loadTime="3.4245188236236572" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="IMessageFactory.java" classObjects="44580 44580 ">
+    </classes>
+    <classes name="[IMessageFactory" id="-44579" loadTime="3.424522876739502" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="272" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" classObjects="-44579 ">
+    </classes>
+    <classes name="Parameters" id="45577" loadTime="3.5628132820129395" baseTime="0.0014482945214843751" cumulativeTime="0.0014482945214843751" calls="26" totalSize="64" totalInstances="4" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Parameters.java" classObjects="45578 45578 ">
+      <methods name="Parameters" id="45566" signature="()" baseTime="6.413794311523437E-5" cumulativeTime="6.413794311523437E-5" calls="4"/>
+      <methods name="addParameter" id="45559" signature="(java.lang.String, java.lang.String) void" baseTime="1.486446697998047E-4" cumulativeTime="1.486446697998047E-4" calls="16"/>
+      <methods name="getBoolean" id="45575" signature="(java.lang.String) boolean" baseTime="4.643520324707031E-5" cumulativeTime="6.109547973632812E-5" calls="1"/>
+      <methods name="getValue" id="45564" signature="(java.lang.String) java.lang.String" baseTime="3.457204040527344E-5" cumulativeTime="3.457204040527344E-5" calls="3"/>
+      <methods name="getInt" id="45571" signature="(java.lang.String) int" baseTime="0.0011545046649169923" cumulativeTime="0.001174416428833008" calls="2"/>
+    </classes>
+    <classes name="SimLogger" id="45901" loadTime="3.602668523788452" baseTime="3.886632489013672E-4" cumulativeTime="3.886632489013672E-4" calls="4" totalSize="16" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="SimLogger.java" classObjects="45902 45902 ">
+      <methods name="-clinit-" id="45898" signature="()" baseTime="2.8580964965820317E-5" cumulativeTime="5.089905456542969E-5" calls="1"/>
+      <methods name="class$" id="45885" signature="(java.lang.String) java.lang.Class" baseTime="2.2318089599609374E-5" cumulativeTime="2.2318089599609374E-5" calls="1"/>
+      <methods name="SimLogger" id="45900" signature="(java.lang.Class)" baseTime="1.2246090698242188E-5" cumulativeTime="3.3776419433593753E-4" calls="1"/>
+      <methods name="SimLogger" id="45899" signature="(java.lang.String)" baseTime="3.2551810363769533E-4" cumulativeTime="3.2551810363769533E-4" calls="1"/>
+    </classes>
+    <classes name="AbsorbingLayer" id="46285" loadTime="3.6390304565429688" baseTime="2.5508971557617188E-5" cumulativeTime="2.573718194580078E-4" calls="1" totalSize="40" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="AbsorbingLayer.java" classObjects="46274 46274 ">
+      <methods name="AbsorbingLayer" id="46284" signature="(java.lang.String, ch.epfl.lsr.adhoc.runtime.Parameters)" baseTime="2.5508971557617188E-5" cumulativeTime="2.573718194580078E-4" calls="1"/>
+    </classes>
+    <classes name="[AsynchronousLayer" id="-42156" loadTime="3.6394832134246826" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="112" totalInstances="5" collectedSize="0" collectedInstances="0" loadedBy="6" classObjects="-42156 ">
+    </classes>
+    <classes name="FrancRuntime" id="46401" loadTime="3.649282455444336" baseTime="0.0021288722467041016" cumulativeTime="0.5732124880718821" calls="6" totalSize="24" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="FrancRuntime.java" classObjects="46402 46402 ">
+      <methods name="FrancRuntime" id="46400" signature="(ch.epfl.lsr.adhoc.runtime.Config, ch.epfl.lsr.adhoc.runtime.AsynchronousLayer[], ch.epfl.lsr.adhoc.runtime.Service[])" baseTime="2.8194429382324217E-4" cumulativeTime="3.083244158935547E-4" calls="1"/>
+      <methods name="createStack" id="46391" signature="() void" baseTime="2.297018249511719E-5" cumulativeTime="2.638012207031252E-5" calls="1"/>
+      <methods name="initialize" id="46399" signature="() void" baseTime="0.001795053482055664" cumulativeTime="0.5729041636559885" calls="1"/>
+      <methods name="getMessagePool" id="46393" signature="() ch.epfl.lsr.adhoc.runtime.MessagePool" baseTime="9.980895996093755E-6" cumulativeTime="9.980895996093755E-6" calls="2"/>
+      <methods name="getNodeID" id="46396" signature="() long" baseTime="1.8923392333984373E-5" cumulativeTime="1.9538554077148436E-5" calls="1"/>
+    </classes>
+    <classes name="Service" id="46494" loadTime="3.6581833362579346" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Service.java" classObjects="46495 46495 ">
+    </classes>
+    <classes name="[Service" id="-46494" loadTime="3.6581873893737793" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="16" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" classObjects="-46494 ">
+    </classes>
+</packages>
+<packages name="ch.epfl.lsr.adhoc" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch.epfl.lsr" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch.epfl" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch.epfl.lsr.adhoc.real" baseTime="0.012000001208496093" cumulativeTime="0.012018181573486329" calls="11" totalSize="488" totalInstances="6" collectedSize="0" collectedInstances="0">
+    <classes name="FrancRealSystem" id="22725" loadTime="1.4384112358093262" baseTime="0.01130971244934082" cumulativeTime="0.012018181573486329" calls="6" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="FrancRealSystem.java" classObjects="22726 22726 ">
+      <methods name="FrancRealSystem" id="22724" signature="()" baseTime="8.58981201171875E-6" cumulativeTime="2.6770177001953123E-5" calls="1"/>
+      <methods name="createPeerThread" id="22723" signature="(java.lang.Runnable) ch.epfl.lsr.adhoc.runtime.FrancThreadInterface" baseTime="0.011301122637329101" cumulativeTime="0.011991411396484375" calls="5"/>
+    </classes>
+    <classes name="FrancRealThread" id="42257" loadTime="3.219299554824829" baseTime="6.902887591552734E-4" cumulativeTime="6.902887591552734E-4" calls="5" totalSize="480" totalInstances="5" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="FrancRealThread.java" classObjects="42258 42258 ">
+      <methods name="FrancRealThread" id="42256" signature="(java.lang.Runnable)" baseTime="6.902887591552734E-4" cumulativeTime="6.902887591552734E-4" calls="5"/>
+    </classes>
+</packages>
+<packages name="simjistwrapper.utils.simstruct" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="144" totalInstances="2" collectedSize="0" collectedInstances="0">
+    <classes name="JSNode$NestedAsyncBroadcast" id="42141" loadTime="3.2078099250793457" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="88" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="JSNode.java" classObjects="42142 42142 ">
+    </classes>
+    <classes name="SubConfig" id="42757" loadTime="3.283627510070801" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="56" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="SubConfig.java" classObjects="42758 42758 ">
+    </classes>
+</packages>
+<packages name="simjistwrapper.utils" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="simjistwrapper" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch.epfl.lsr.adhoc.tools" baseTime="0.1019413839428711" cumulativeTime="0.1019413839428711" calls="4" totalSize="32" totalInstances="2" collectedSize="0" collectedInstances="0">
+    <classes name="ParserXml" id="42885" loadTime="3.2934517860412598" baseTime="0.10193434994506836" cumulativeTime="0.1019413839428711" calls="3" totalSize="16" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="ParserXml.java" classObjects="42886 42886 ">
+      <methods name="-clinit-" id="42883" signature="()" baseTime="5.7705568237304694E-5" cumulativeTime="5.7705568237304694E-5" calls="1"/>
+      <methods name="ParserXml" id="42884" signature="()" baseTime="4.201346435546875E-6" cumulativeTime="4.201346435546875E-6" calls="1"/>
+      <methods name="parse" id="42882" signature="(java.io.File) org.w3c.dom.Document" baseTime="0.10187244303039551" cumulativeTime="0.10187947702819825" calls="1"/>
+    </classes>
+    <classes name="ParserXml$1" id="43252" loadTime="3.31113862991333" baseTime="7.033997802734375E-6" cumulativeTime="7.033997802734375E-6" calls="1" totalSize="16" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="ParserXml.java" classObjects="43253 43253 ">
+      <methods name="ParserXml$1" id="43251" signature="(ch.epfl.lsr.adhoc.tools.ParserXml)" baseTime="7.033997802734375E-6" cumulativeTime="7.033997802734375E-6" calls="1"/>
+    </classes>
+</packages>
+<packages name="ch.epfl.lsr.adhoc.services.neighboring" baseTime="1.6848136596679685E-5" cumulativeTime="1.6848136596679685E-5" calls="1" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0">
+    <classes name="HelloMsgFactory" id="44866" loadTime="3.4699463844299316" baseTime="1.6848136596679685E-5" cumulativeTime="1.6848136596679685E-5" calls="1" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="HelloMsgFactory.java" classObjects="44856 44856 ">
+      <methods name="HelloMsgFactory" id="44865" signature="()" baseTime="1.6848136596679685E-5" cumulativeTime="1.6848136596679685E-5" calls="1"/>
+    </classes>
+</packages>
+<packages name="ch.epfl.lsr.adhoc.services" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch.epfl.lsr.adhoc.chat" baseTime="7.142974853515626E-6" cumulativeTime="7.142974853515626E-6" calls="1" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0">
+    <classes name="TextMessageFactory" id="45066" loadTime="3.4895575046539307" baseTime="7.142974853515626E-6" cumulativeTime="7.142974853515626E-6" calls="1" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="TextMessageFactory.java" classObjects="45056 45056 ">
+      <methods name="TextMessageFactory" id="45065" signature="()" baseTime="7.142974853515626E-6" cumulativeTime="7.142974853515626E-6" calls="1"/>
+    </classes>
+</packages>
+<packages name="ch.epfl.lsr.adhoc.routing.ncode" baseTime="0.5885413342834299" cumulativeTime="0.5893304221221751" calls="9824" totalSize="12368" totalInstances="511" collectedSize="0" collectedInstances="0">
+    <classes name="NCodeMessageFactory" id="45267" loadTime="3.50527286529541" baseTime="7.301393432617187E-6" cumulativeTime="7.301393432617187E-6" calls="1" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="NCodeMessageFactory.java" classObjects="45257 45257 ">
+      <methods name="NCodeMessageFactory" id="45266" signature="()" baseTime="7.301393432617187E-6" cumulativeTime="7.301393432617187E-6" calls="1"/>
+    </classes>
+    <classes name="Ncode" id="45796" loadTime="3.5921998023986816" baseTime="0.09588679296264649" cumulativeTime="0.5893231207287425" calls="4" totalSize="136" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Ncode.java" classObjects="45797 45797 ">
+      <methods name="-clinit-" id="45794" signature="()" baseTime="0.010409736869506836" cumulativeTime="0.010816975092163087" calls="1"/>
+      <methods name="class$" id="45790" signature="(java.lang.String) java.lang.Class" baseTime="1.8574973754882814E-5" cumulativeTime="1.8574973754882814E-5" calls="1"/>
+      <methods name="Ncode" id="45795" signature="(java.lang.String, ch.epfl.lsr.adhoc.runtime.Parameters)" baseTime="0.008686983392944336" cumulativeTime="0.008870419221191406" calls="1"/>
+      <methods name="initialize" id="45791" signature="(ch.epfl.lsr.adhoc.runtime.FrancRuntime) void" baseTime="0.07677149772644043" cumulativeTime="0.569635726415388" calls="1"/>
+    </classes>
+    <classes name="Globals" id="46034" loadTime="3.6123604774475098" baseTime="6.376320190429686E-6" cumulativeTime="6.376320190429686E-6" calls="1" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="Globals.java" classObjects="46035 46035 ">
+      <methods name="-clinit-" id="46032" signature="()" baseTime="6.376320190429686E-6" cumulativeTime="6.376320190429686E-6" calls="1"/>
+    </classes>
+    <classes name="DelayedTransmission" id="46610" loadTime="3.6808412075042725" baseTime="2.996213439941406E-5" cumulativeTime="1.9194825012207033E-4" calls="1" totalSize="32" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="DelayedTransmission.java" classObjects="46611 46611 ">
+      <methods name="DelayedTransmission" id="46609" signature="(ch.epfl.lsr.adhoc.runtime.AsynchronousLayer, int)" baseTime="2.996213439941406E-5" cumulativeTime="1.9194825012207033E-4" calls="1"/>
+    </classes>
+    <classes name="CoefEltPool" id="46711" loadTime="3.6958181858062744" baseTime="3.525004150390625E-5" cumulativeTime="3.525004150390625E-5" calls="1" totalSize="16" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="CoefEltPool.java" classObjects="46712 46712 ">
+      <methods name="CoefEltPool" id="46710" signature="()" baseTime="3.525004150390625E-5" cumulativeTime="3.525004150390625E-5" calls="1"/>
+    </classes>
+    <classes name="NCdatagramPool" id="46805" loadTime="3.706569194793701" baseTime="2.561539123535156E-5" cumulativeTime="2.561539123535156E-5" calls="1" totalSize="16" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="NCdatagramPool.java" classObjects="46806 46806 ">
+      <methods name="NCdatagramPool" id="46804" signature="(ch.epfl.lsr.adhoc.routing.ncode.CoefEltPool)" baseTime="2.561539123535156E-5" cumulativeTime="2.561539123535156E-5" calls="1"/>
+    </classes>
+    <classes name="GaloisField" id="46928" loadTime="3.7205772399902344" baseTime="0.004347933129882774" cumulativeTime="0.004347933129882774" calls="5094" totalSize="24" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="GaloisField.java" classObjects="46929 46929 ">
+      <methods name="GaloisField" id="46926" signature="(int)" baseTime="2.0107578125E-5" cumulativeTime="5.433789611816407E-5" calls="1"/>
+      <methods name="prime" id="46923" signature="(int) int" baseTime="1.62955322265625E-5" cumulativeTime="1.62955322265625E-5" calls="1"/>
+      <methods name="findAlfa" id="46897" signature="(int) int" baseTime="5.698277587890625E-6" cumulativeTime="9.897066650390624E-6" calls="1"/>
+      <methods name="isAlfa" id="46898" signature="(int, int) boolean" baseTime="4.198789062499999E-6" cumulativeTime="4.198789062499999E-6" calls="1"/>
+      <methods name="GaloisField" id="46927" signature="(int, int)" baseTime="8.658695068359376E-6" cumulativeTime="8.658695068359376E-6" calls="2"/>
+      <methods name="power" id="46895" signature="(int, int) int" baseTime="3.7974841308593762E-6" cumulativeTime="3.7974841308593762E-6" calls="6"/>
+      <methods name="normalise" id="46913" signature="(int) int" baseTime="0.0013389724078369195" cumulativeTime="0.0013389724078369195" calls="3038"/>
+      <methods name="product" id="46918" signature="(int, int) int" baseTime="3.3709583679198866E-4" cumulativeTime="3.3709583679198866E-4" calls="874"/>
+      <methods name="sum" id="46921" signature="(int, int) int" baseTime="1.8637522277832028E-4" cumulativeTime="1.8637522277832028E-4" calls="502"/>
+      <methods name="divide" id="46919" signature="(int, int) int" baseTime="4.0655775024414084E-4" cumulativeTime="4.6141228759765643E-4" calls="95"/>
+      <methods name="glPower" id="46899" signature="(int, int) int" baseTime="5.48545373535156E-5" cumulativeTime="5.48545373535156E-5" calls="95"/>
+      <methods name="minus" id="46917" signature="(int, int) int" baseTime="0.001965321018676753" cumulativeTime="0.0021769641259765486" calls="478"/>
+    </classes>
+    <classes name="ExtendedGaloisField" id="47034" loadTime="3.7403295040130615" baseTime="0.013876336548461914" cumulativeTime="0.49249569814390876" calls="2" totalSize="40" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="ExtendedGaloisField.java" classObjects="47035 47035 ">
+      <methods name="-clinit-" id="47031" signature="()" baseTime="1.0150406494140624E-5" cumulativeTime="1.0150406494140624E-5" calls="1"/>
+      <methods name="ExtendedGaloisField" id="47032" signature="(ch.epfl.lsr.adhoc.routing.ncode.GaloisField, char, int)" baseTime="0.013866186141967773" cumulativeTime="0.49248554773741465" calls="1"/>
+    </classes>
+    <classes name="GaloisPolynomial" id="47150" loadTime="3.754342555999756" baseTime="0.4743257663616916" cumulativeTime="0.47861771071349907" calls="4719" totalSize="10848" totalInstances="452" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="GaloisPolynomial.java" classObjects="47151 47151 ">
+      <methods name="-clinit-" id="47147" signature="()" baseTime="1.0802822875976556E-5" cumulativeTime="1.0802822875976556E-5" calls="1"/>
+      <methods name="GaloisPolynomial" id="47148" signature="(int[], char, ch.epfl.lsr.adhoc.routing.ncode.GaloisField)" baseTime="0.040440749918212886" cumulativeTime="0.04156807921875019" calls="452"/>
+      <methods name="irrMonomials" id="47134" signature="(int, char, ch.epfl.lsr.adhoc.routing.ncode.GaloisField) java.util.Vector" baseTime="0.0026099681854248047" cumulativeTime="0.47857763064147757" calls="1"/>
+      <methods name="createCoefficients" id="47128" signature="(int) int[]" baseTime="1.4338460083007813E-5" cumulativeTime="1.4338460083007813E-5" calls="5"/>
+      <methods name="incCoefficients" id="47127" signature="(int[], int, ch.epfl.lsr.adhoc.routing.ncode.GaloisField) void" baseTime="0.09900828321105956" cumulativeTime="0.09900828321105956" calls="63"/>
+      <methods name="calcHorner" id="47130" signature="(int) int" baseTime="0.004530315076904295" cumulativeTime="0.0049386195257567975" calls="94"/>
+      <methods name="degree" id="47133" signature="() int" baseTime="0.0013085166821289085" cumulativeTime="0.0013085166821289085" calls="2552"/>
+      <methods name="divide" id="47141" signature="(ch.epfl.lsr.adhoc.routing.ncode.GaloisPolynomial) ch.epfl.lsr.adhoc.routing.ncode.GaloisPolynomial[]" baseTime="0.027472398734741214" cumulativeTime="0.369206328467406" calls="52"/>
+      <methods name="copy" id="47143" signature="() ch.epfl.lsr.adhoc.routing.ncode.GaloisPolynomial" baseTime="0.0010082920953369122" cumulativeTime="0.033784672799072234" calls="147"/>
+      <methods name="getCoefficient" id="47132" signature="(int) int" baseTime="0.10514173596313516" cumulativeTime="0.10556757403930696" calls="1111"/>
+      <methods name="product_one_term" id="47129" signature="(int, int) ch.epfl.lsr.adhoc.routing.ncode.GaloisPolynomial" baseTime="0.00464182783935547" cumulativeTime="0.008146738372802716" calls="95"/>
+      <methods name="minus" id="47139" signature="(ch.epfl.lsr.adhoc.routing.ncode.GaloisPolynomial) ch.epfl.lsr.adhoc.routing.ncode.GaloisPolynomial" baseTime="0.18734707499389652" cumulativeTime="0.2975005902673328" calls="95"/>
+      <methods name="equals" id="47146" signature="(ch.epfl.lsr.adhoc.routing.ncode.GaloisPolynomial) boolean" baseTime="7.91462378540039E-4" cumulativeTime="8.819673748779346E-4" calls="51"/>
+    </classes>
+    <classes name="[GaloisPolynomial" id="-47150" loadTime="3.756289482116699" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="1248" totalInstances="52" collectedSize="0" collectedInstances="0" loadedBy="6" classObjects="-47150 ">
+    </classes>
+</packages>
+<packages name="ch.epfl.lsr.adhoc.routing" baseTime="0.0" cumulativeTime="0.0" calls="0" totalSize="0" totalInstances="0" collectedSize="0" collectedInstances="0">
+</packages>
+<packages name="ch.epfl.lsr.adhoc.routing.ncode.feedback" baseTime="7.231393432617188E-6" cumulativeTime="7.231393432617188E-6" calls="1" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0">
+    <classes name="NCodeFBMessageFactory" id="45467" loadTime="3.554577112197876" baseTime="7.231393432617188E-6" cumulativeTime="7.231393432617188E-6" calls="1" totalSize="8" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="NCodeFBMessageFactory.java" classObjects="45457 45457 ">
+      <methods name="NCodeFBMessageFactory" id="45466" signature="()" baseTime="7.231393432617188E-6" cumulativeTime="7.231393432617188E-6" calls="1"/>
+    </classes>
+</packages>
+<packages name="ch.epfl.lsr.adhoc.autochat" baseTime="4.091472778320312E-5" cumulativeTime="2.1926479431152345E-4" calls="2" totalSize="96" totalInstances="1" collectedSize="0" collectedInstances="0">
+    <classes name="AutoChat" id="46164" loadTime="3.6297659873962402" baseTime="4.091472778320312E-5" cumulativeTime="2.1926479431152345E-4" calls="2" totalSize="96" totalInstances="1" collectedSize="0" collectedInstances="0" loadedBy="6" sourceInfo="AutoChat.java" classObjects="46165 46165 ">
+      <methods name="-clinit-" id="46162" signature="()" baseTime="7.740453491210936E-6" cumulativeTime="7.740453491210936E-6" calls="1"/>
+      <methods name="AutoChat" id="46163" signature="(java.lang.String, ch.epfl.lsr.adhoc.runtime.Parameters)" baseTime="3.317427429199219E-5" cumulativeTime="2.115243408203125E-4" calls="1"/>
+    </classes>
+</packages>
+</Agent>
+</Contents>

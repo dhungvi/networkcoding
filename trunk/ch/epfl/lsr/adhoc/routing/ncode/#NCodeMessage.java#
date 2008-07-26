@@ -1,0 +1,146 @@
+package ch.epfl.lsr.adhoc.routing.ncode;
+
+//import Coef_Elt;
+
+import java.util.Vector;
+import java.net.*;
+
+import ch.epfl.lsr.adhoc.runtime.Message;
+
+/**
+ * This is a simple implementation of network coded packet.
+ * <p>
+ * This Message is a very simple implementation of Message, which allows to
+ * encapsulate another message in a network coded message. It is created 
+ * through the NCodeFactory class (also a simple test class).
+ * <p>
+ * @see NCodeFactory
+ * @see Message
+ * @author KavÅÈ Salamatian
+ * @version 1.0
+ */
+public class NCodeMessage extends Message {
+  /** Encapsulate the actual message */
+	private NCdatagram payload;
+	private int length;
+	private long gen_;
+//	private int reduced_coef_list;
+	private boolean decoded;
+	private boolean list_extract; // to note wheither the coef_list is extracted from the received payload
+	private int MDU;
+  /**
+   * Creates a new instance of NCodeMessage.
+   * <p>
+   * The type of this message object is initialized at creation time and cannot
+   * be changed later (for better use in a MessagePool).
+   * <p>
+   * @param type The type of service for this message
+   */
+  public NCodeMessage(char type) {
+    super(type);
+  }
+
+  /**
+   * Write the text (for this message) with the addString() method to the
+   * buffer (for sending the message on the network).
+   */
+  public void prepareData() {
+	  int s = payload.coefs_list.size();
+	  Coef_Elt coef_elt;
+	  
+	  /** Adding Coefs_list size **/
+	  addByte(int2byte(s));
+	  /** Adding Coefs_list**/
+	  for (int i=0; i < s; i++) {
+			coef_elt = (Coef_Elt) payload.coefs_list.elementAt(i);			
+			addByte(int2byte(coef_elt.coef_));
+			addInt(coef_elt.id_.index_);
+			addInt(coef_elt.length);
+			addBytes(coef_elt.id_.saddr.getAddress());
+		}
+	  /** Adding Payload data **/	  
+	  addBytes(payload.Buf);
+  }
+
+  /**
+   * Read the text (for this message) from the buffer with the getString() method.
+   */
+  public void readData() {
+	  byte coef_;
+	  byte[] add=new byte[4];  
+	  //* To change !!!!
+	  byte[] Buf=new byte[1000];
+	  
+	  Coef_Elt coef_elt;
+	  /** Getting Coefs_list size **/
+	  byte s=getByte();
+	  Vector coefs_list= new Vector(s);
+	  /** Adding Coefs_list**/
+	  for (int i=0; i < s; i++) {
+		  coef_=getByte();
+		  coef_elt=new Coef_Elt(coef_);
+		  coef_elt.id_.index_=getInt();
+		  coef_elt.length=getInt();
+			  try {
+				int l=getBytes(add);
+				coef_elt.id_.saddr=InetAddress.getByAddress(add);
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			}
+			  coefs_list.add(coef_elt);
+	  }
+	  /** getting Payload data **/	  
+	  int l=getBytes(Buf);
+
+	  payload = new NCdatagram(l);
+
+	  System.arraycopy(Buf,0,payload.Buf,0,l);	  
+	  payload.coefs_list= new Vector(s);
+	  for (int i=0; i < s; i++) {
+		  payload.coefs_list.add(coefs_list.elementAt(i)); 
+	  }
+  }
+
+  /**
+   * Changes the textual message in this message object.
+   * <p>
+   * @param text The new textual message
+   */
+  public void setNCdatagram(NCdatagram Payload) {
+    this.payload = Payload;
+  }
+
+  /**
+   * Returns the textual message contained whithin this message object.
+   * <p>
+   * @return The textual message in this message object
+   */
+  public NCdatagram getNCdatagram() {
+    return payload;
+  }
+
+  /**
+   * Overwrites Object.toString().
+   * <p>
+   * This method allows this message object to be printed in a statement such
+   * as System.out.println().
+   * <p>
+   * @return A String representation of this object (the text containted in this message)
+   */
+	public byte int2byte(int val) {
+		return (byte) val;
+	}
+
+	public int byte2int(byte val){
+		int i=val;
+		if (i <0 ) {
+			i=i+256;
+			return i;
+		} else {
+			return i;
+		}
+	}
+	
+
+
+}

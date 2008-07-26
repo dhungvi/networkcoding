@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!DOCTYPE simulation SYSTEM "js.dtd">
+<simulation>
+	<CommonParameters>
+		<FieldLayer fieldlength="400" fieldwidth="400">
+			<mobility mobilitymodel="static">
+			</mobility>
+		</FieldLayer>
+	</CommonParameters>
+	<NodeModels>
+		<NodeModel id="1">
+			<FrancStack>franc.xml</FrancStack>
+			<Position positiontype="random">
+			</Position>
+		</NodeModel>
+		<NodeModel id="2">
+			<FrancStack>franc.xml</FrancStack>
+			<Position positiontype="deterministic">
+				<posx>0</posx>
+				<posy>0</posy>
+			</Position>
+		</NodeModel>
+		<NodeModel id="3">
+			<FrancStack>franc.xml</FrancStack>
+			<Position positiontype="deterministic">
+				<posx>400</posx>
+				<posy>0</posy>
+			</Position>
+		</NodeModel>
+	</NodeModels>
+	<Orders>
+		<Order>
+			<orderedmodel>1</orderedmodel>
+			<qtity>4</qtity>
+		</Order>
+		<Order>
+			<orderedmodel>2</orderedmodel>
+			<qtity>1</qtity>
+		</Order>
+		<Order>
+			<orderedmodel>3</orderedmodel>
+			<qtity>1</qtity>
+		</Order>
+	</Orders>
+</simulation>
