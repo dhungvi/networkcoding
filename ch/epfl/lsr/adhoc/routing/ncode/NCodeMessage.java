@@ -21,10 +21,10 @@ import ch.epfl.lsr.adhoc.runtime.Message;
  */
 public class NCodeMessage extends Message {
   /** Encapsulate the actual message */
-	byte[] inbuf=new byte[Globals.MaxBufLength];
-	int inLength=0;
-	byte[] outbuf=new byte[Globals.MaxBufLength];;
-	int outLength=0;
+	protected byte[] inbuf=new byte[NCGlobals.MaxBufLength];
+	protected int inLength=0;
+	protected byte[] outbuf=new byte[NCGlobals.MaxBufLength];;
+	protected int outLength=0;
 //	private NCdatagram payload;
 //	private NCdatagram rcvNCdatagram;
 //	private GaloisField base;
@@ -43,17 +43,14 @@ public class NCodeMessage extends Message {
 //    rcvNCdatagram=new NCdatagram(0);
   }
 
-  /**
-   * Write the text (for this message) with the addString() method to the
-   * buffer (for sending the message on the network).
-   */
   public synchronized void prepareData() {
 	  addBytes(outbuf,outLength);
-	  if ((data[54]==98) && (data[55] > 5) ){
-		  if ((data[161]!=4)) {
-	    	int i=0;
-		  }
-	  }
+	  // for test purpose
+//	  if ((data[54]==98) && (data[55] > 5) ){
+//		  if ((data[161]!=4)) {
+//	    	int i=0;
+//		  }
+//	  }
 
 //	  int s ;
 //	  Coef_Elt coef_elt;
@@ -91,9 +88,6 @@ public class NCodeMessage extends Message {
 //	  }
   }
 
-  /**
-   * Read the text (for this message) from the buffer with the getString() method.
-   */
   public synchronized void readData() {
 //	  if ((data[55] > 5) && (data[161]!=4)){
 //	    	int i=0;
@@ -143,12 +137,7 @@ public class NCodeMessage extends Message {
 //	  }
   }
 
-  /**
-   * Changes the textual message in this message object.
-   * <p>
-   * @param text The new textual message
-   */
-  public synchronized void setOutbuf(byte[] buf, int bufLength) {
+   public synchronized void setOutbuf(byte[] buf, int bufLength) {
 //    this.payload = (NCdatagram) Payload.clone();
 	  outbuf=buf;
 	  outLength=bufLength; 
@@ -165,14 +154,6 @@ public class NCodeMessage extends Message {
 	  return inLength;
   }
 
-  /**
-   * Overwrites Object.toString().
-   * <p>
-   * This method allows this message object to be printed in a statement such
-   * as System.out.println().
-   * <p>
-   * @return A String representation of this object (the text containted in this message)
-   */
 	public byte int2byte(int val) {
 		return (byte) val;
 	}

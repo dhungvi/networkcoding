@@ -63,9 +63,7 @@ public class DelayedTransmission extends FrancThread{
       try {
         FrancThread.sleep(delay);
       } catch(InterruptedException ie) {}
-      try {
-    	  layer.sendFbData();
-      } catch (SendMessageFailedException sme) {}
+      layer.generateEncoded();
    }
  }
 

@@ -4,10 +4,7 @@ package ch.epfl.lsr.adhoc.routing.ncode;
 
 import ch.epfl.lsr.adhoc.routing.ncode.GaloisException;
 
-import java.lang.*;
-import java.net.InetAddress;
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Random;
 import java.util.Vector;
 
@@ -59,49 +56,49 @@ public class Ncode extends AsynchronousLayer {
 //  private int bufferLength;
   /** The probability of retransmission (in percent) */
 //  private int MDU;	// max data unit
-  private int MCLU;
+  protected int MCLU;
   private int HCL;	// Hard Coefficient Limit
-  private int recv_cntr = 0;
+  protected int recv_cntr = 0;
 //  private Vector PktBuffer;
   /** List containing the packet to decode index */
-  private Vector decodingBuf;
+  protected Vector<NCdatagram> decodingBuf;
   /** List containing the decoded packet index */
-  private Vector decodedBuf;
+  protected Vector<NCdatagram> decodedBuf;
   
-  private NCdatagramPool ncpool;
-  private CoefEltPool cfpool;
-  private byte [] outBuf=new byte[Globals.MaxBufLength];
-  private byte [] inBuf=new byte[Globals.MaxBufLength];
-  private byte [] encBuf=new byte[Globals.MaxBufLength];
+  protected NCdatagramPool ncpool;
+  protected CoefEltPool cfpool;
+  protected byte [] outBuf=new byte[NCGlobals.MaxBufLength];
+  protected byte [] inBuf=new byte[NCGlobals.MaxBufLength];
+  protected byte [] encBuf=new byte[NCGlobals.MaxBufLength];
   
   //  private NCdatagram tmpEncDatagram;
-  private Vector varList;
-  private Vector decodedList;
+  protected Vector<Pkt_ID> varList;
+  protected Vector<Pkt_ID> decodedList;
 //  private Hashtable decodedList;
-  private int rank;
-  private int[][] A;
-  private Random rnd;
-  private GaloisField base;
-  private ExtendedGaloisField GF;
+  protected int rank;
+  protected int[][] A;
+  protected Random rnd;
+  protected GaloisField base;
+  protected ExtendedGaloisField GF;
   public int PktIndex;
-  
-  private InetAddress source, destination;
-  private static SimLogger logger;
+  protected int recvPkt=0;
+  protected int sendPkt=0;
+  protected static SimLogger logger;
   
   /** The node if of this node. */
   private long myNodeID;
   /** A reference to message pool. */
   public MessagePool mp;
   
-  boolean simulMode;
+  protected boolean simulMode;
 
   /** Default constructor */
 
   public Ncode(String name, Parameters params){
 	  super(name, params);
 	  this.params = params;
-	  decodedBuf=new Vector(0);
-	  decodingBuf=new Vector(0);
+	  decodedBuf=new Vector<NCdatagram>(0);
+	  decodingBuf=new Vector<NCdatagram>(0);
   }
 
   /**
@@ -125,20 +122,17 @@ public class Ncode extends AsynchronousLayer {
     if(delayMax < 0)
       throw new RuntimeException("Configuration variable delayMax cannot be negative");
 
+    NCGlobals.nodeID_=runtime.getNodeID();
     this.dt = new DelayedTransmission(this, delayMax);
     this.myNodeID = runtime.getNodeID();
     this.mp = runtime.getMessagePool();
     this.cfpool=new CoefEltPool();
     this.ncpool=new NCdatagramPool(cfpool);
-//	base = Globals.base;
-	GF = Globals.GF;
-//	map_list = new Vector();
-	varList=new Vector();
-	decodedList= new Vector();
+	GF = NCGlobals.GF;
 	
 	rank = 0;
     try {
-    	Globals.MaxBufLength=params.getInt("MaximumDataUnit");
+    	NCGlobals.MaxBufLength=params.getInt("MaximumDataUnit");
     } catch(ParamDoesNotExistException pdnee) {
         throw new RuntimeException("Error reading configuration value MDU: " + pdnee.getMessage());
     }
@@ -170,7 +164,7 @@ public class Ncode extends AsynchronousLayer {
 	rnd = new Random(System.currentTimeMillis());
 	PktIndex=rnd.nextInt();
 
-	logger=Globals.logger;
+	logger=NCGlobals.logger;
 //	PropertyConfigurator.configure(
 //			DefaultLoggerConfig.getLoggerConfig("error.log", "simulation.log"));
 	simulMode= runtime.isSimulMode();
@@ -195,15 +189,6 @@ public class Ncode extends AsynchronousLayer {
    * @param msg The message to handle
    */
   protected void handleMessage(Message msg) {
-	
-    int sequenceNumber = msg.getSequenceNumber();
-    long srcNode = msg.getSrcNode();
-    long dstNode = msg.getDstNode();
-    int ttl = msg.getTTL();
-    int index = 0;
-    boolean found = false;
-    
-    
 	if(msg == null) {
 		System.out.println("> # message is null");
 		return;
@@ -216,10 +201,8 @@ public class Ncode extends AsynchronousLayer {
 		// it is a Ncode packet
 		synchronized(inBuf) {
 			int len=((NCodeMessage)msg).getInBuf(inBuf);
-			NCdatagram nc=ncpool.getNCdatagram();
+			NCdatagram nc=ncpool.get();
 			synchronized(nc) {
-//				nc.free(cfpool);
-//				nc.validate();
 				try {
 					if (nc.unserialize(inBuf,cfpool)>0) {
 						logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" RCVFROM: "+msg.getSrcNode()+" IND: "+nc.getIndex()+" #COEF: "+nc.coefs_list.size());
@@ -227,59 +210,36 @@ public class Ncode extends AsynchronousLayer {
 					} else {
 						//Nothing to do !!!
 					}
-					ncpool.freeNCdatagram(nc); 
+					ncpool.free(nc); 
 				} catch(RuntimeException e) {
 				//	 Exception in decoding the packet
-	  			// Should not happen but seems to happen because of fragmentation !!!
-//	  				return 0;
 					 logger.debug("Fragmentation happened !!");
 				 }
 			}
 		}
 		mp.freeMessage(msg);
-		// What to do with processes NCdatagram ?
 	} else {
-//		logger.error("Unknown message received !");
         super.handleMessage(msg);
 	}
   }
   
 	public int sendMessage(Message msg) throws SendMessageFailedException {		
 		Coef_Elt coef;
-		NCdatagram tmpNCdatagram = (NCdatagram) ncpool.getNCdatagram();
+		NCdatagram tmp = (NCdatagram) ncpool.get();
 		if (msg.getType()==5) {
 			if(msg.getTTL() <= 0) return 0;	
 	  		msg.setNextHop(0);
 	  		return super.sendMessage(msg);
 		} else {
 			logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" APPLI: IN "+msg); 					
-			int l=msg.getByteArray(tmpNCdatagram.Buf);
-			tmpNCdatagram.setLength(l);
-			tmpNCdatagram.setDecoded();
-			tmpNCdatagram.setIndex(PktIndex);
+			int l=msg.getByteArray(tmp.Buf);
+			tmp.setLength(l);
+			tmp.setDecoded();
+			tmp.setIndex(PktIndex);
 			coef=cfpool.getCoefElt(1,PktIndex++);
-			tmpNCdatagram.coefs_list.put(coef.key(),coef);
-//		generateEncoded();
-//		synchronized(outBuf) {
-//			int len=tmpNCdatagram.serialize(outBuf);
-//			NCodeMessage tm = (NCodeMessage)mp.getMessage(msgType);
-		
-//			tm.setOutbuf(outBuf,len);
-//			tm.setDstNode(0);
-//			tm.setTTL(1);
-//			send(tm);
-//		}
-//		logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" SEND: N "+" IND: "+tmpNCdatagram.getIndex()+" #COEF: "+tmpNCdatagram.coefs_list.size()); 
-//		logger.info("At time: "+System.currentTimeMillis()+":NODE ID "+myNodeID+": new Packet send with "++" coeffs");
-			decodedBuf.add(tmpNCdatagram);
+			tmp.coefs_list.put(coef.key(),coef);
+			decodedBuf.add(tmp);
 			decodedList.add(coef.getID());
-//		decodedList.add(new Integer(PktBuffer.size()));
-		
-//		decodedBuf.add(freshData.clone());
-//		fresh_send_ctr = fresh_fwd_factor;
-//		PktIndex++;
-
-//		generated();
 			mp.freeMessage(msg);
 		} 
 		return 1;
@@ -305,7 +265,7 @@ public class Ncode extends AsynchronousLayer {
 						logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" SEND: E "+" IND: "+tmpEncDatagram.getIndex()+" #COEF: "+tmpEncDatagram.coefs_list.size()); 					
 						send(tm);
 //					 	Should we free the tmpEncDatagram ! to check if send(tm) could be made synchronized ! 	  
-						ncpool.freeNCdatagram(tmpEncDatagram);
+						ncpool.free(tmpEncDatagram);
 					}				
 				}
 			}
@@ -313,7 +273,6 @@ public class Ncode extends AsynchronousLayer {
 	  catch(GaloisException e) {
 			logger.error("NetCod_Module: generate Encoded: " + e);
 	  } catch (SendMessageFailedException e) {
-		// TODO Auto-generated catch block
 		e.printStackTrace();
 	  }
 	}
@@ -327,262 +286,72 @@ public class Ncode extends AsynchronousLayer {
 
 
 //--------------------------------------------------------------------	
-/**
-* blbla
-* @param int[]
-* @return NCdatagram 
-*/
+	/**
+	 * blbla
+	 * @param int[]
+	 * @return NCdatagram 
+	 */
 	public synchronized NCdatagram encode() throws GaloisException {
-			int L,l;
-			int choice, order,coef;
-			NCdatagram g, gclone=ncpool.getNCdatagram();
-			boolean flag=false;
-			
-			NCdatagram nc=ncpool.getNCdatagram();
-//			nc.validate();
-			L=decodedBuf.size();
-			l=(decodedBuf.size() + varList.size());
-			// For encoding we should have received packets 
-			if (l==0) {
-				return null;
-			}
-			// As a First try we do not put any upper bound on the number of coefficient 
-			synchronized(decodingBuf) {
-				int len=(decodingBuf.size() + decodedBuf.size());
-				// len should be larger than 0 unless an Error 
-				if (len ==0) {
-					logger.error("ERROR : LEN ==0 while L!=0");
-				}
-				// choose number of packets to mix, ensure that it is larger than 1
-				order=Math.max(rnd.nextInt(Math.min(MCLU,l)),1);
-				for (int i=0;i<order; i++) {
-					NCdatagram nc1=ncpool.NCdatagramclone(nc);
-//					nc1.validate();
-					choice=rnd.nextInt(len);
-					// We should insure that coef !=0
-					coef= rnd.nextInt(255-1)+1;				
-					if (choice > (L - 1)) {
-						choice=choice-L;
-						g=(NCdatagram)decodingBuf.elementAt(choice);
-					} else {
-						g=(NCdatagram)decodedBuf.elementAt(choice);
-					}
-//					g.validate();
-					gclone=(NCdatagram) ncpool.NCdatagramclone(g);
-					if (i>0) {					
-						nc= nc.sum(gclone.product(coef),cfpool);
-					} else {
-						nc=gclone.product(coef);
-					}	
-//				ncpool.freeNCdatagram(gclone);
-//					nc.validate();
-				}
-			}
-			nc.setIndex(PktIndex++);
-			return nc;	
-			
-				
-/*			//Now we are sure that some packets exists	
-				order=rnd.nextInt(Math.min(MCLU,l))+2;
-			} else {
-				order =1;
-			}
-			
-			int len=(decodingBuf.size() + decodedBuf.size());
-			if (len > 0) {
-				while(true) {		
-					index++;
-					gclone=(NCdatagram) g1.clone();
-					choice=rnd.nextInt(len);
-					// we should ensure that the coef is not null !
-					coef= rnd.nextInt(255-1)+1;
-					if (choice > (L - 1)) {
-						choice=choice-L-1;
-						g1 = NC_sum(g1,NC_product(coef, (NCdatagram) decodingBuf.elementAt(choice)));
-						flag=true;
-					} else {
-						g1 = NC_sum(g1,NC_product(coef , (NCdatagram) decodedBuf.elementAt(choice)));				
-					}
-					if (g1.coefs_list.size()> order) {
-						g1=gclone;
-					} else {
-						if (g1.coefs_list.size()==order){
-							break;
-						} 
-					}
-				} 
-				validate(g1);
-				return g1;	
-			} else {
-				System.out.println("NULLLLLLLLLL !");
-				return null;
-			}
-*/	}
+		int L,l;
+		int choice, order,coef;
+		NCdatagram g, gclone,nc=null;
 
-////--------------------------------------------------------------------	
-//	public synchronized NCdatagram NC_product(int coef, NCdatagram g) throws GaloisException {
-//
-//		int i,j,k;
-//		Coef_Elt coeftp;
-//		NCdatagram gc = (NCdatagram) ncpool.NCdatagramclone(g);
-//		
-//		// handling the coefs_list
-//  	  	Enumeration ec = gc.coefs_list.elements();
-//		while(ec.hasMoreElements())
-//		{
-//			coeftp=(Coef_Elt) ec.nextElement();
-//			coeftp.coef_ = GF.product(coeftp.coef_ , coef);
-//		}
-//		
-//
-//		// handling the data in the StringBuffer
-////		System.out.println("NC_product " + gc.Buf.length());
-//		for(i = 0; i < g.dataLength ; i++) {			
-//			gc.Buf[i]=int2byte(GF.product(byte2int(g.Buf[i]), coef)); 				
-//		}		
-//		
-//		return gc;
-//	}
-//
-//
-////--------------------------------------------------------------------	
-//	public synchronized NCdatagram NC_sum(NCdatagram g1, NCdatagram g2) throws GaloisException {
-//
-//		int i,j;
-//
-//		Coef_Elt coef, coefp;
-//
-////		Vector list=(Vector)g1.coefs_list.clone();
-////		Vector list= new Vector(0);
-//		
-//		synchronized(g1) {
-//			synchronized(g2) {
-//				Enumeration egp=g1.coefs_list.elements();
-//				while (egp.hasMoreElements()) {
-//					coefp=(Coef_Elt) egp.nextElement();
-//					coef= (Coef_Elt) g2.coefs_list.get(coefp.key());
-//					if (coef != null) {
-//						coef.coef_=GF.sum(coef.getCoef(),coefp.getCoef());
-//						if (coef.coef_==0) {
-//							g1.coefs_list.remove(coef.key());
-//						} else {
-//							coef=cf.coefclone(coefp);
-//							g1.coefs_list.put(coef.key(),coef);	
-//							}
-//					}
-//				}
-//
-//		
-//		
-//		Enumeration eg=g2.coefs_list.elements();
-//		while (eg.hasMoreElements()) {
-//			coef=(Coef_Elt) eg.nextElement();
-//			coefp=cfpool.coefclone(coef);
-//			g1.coefs_list.add(coefp);
-//		}
-//		
-//		
-//		for (i=0;i<g1.coefs_list.size();i++) {
-//			coef=(Coef_Elt)g1.coefs_list.elementAt(i);
-//			for (j=i+1;j<g1.coefs_list.size();j++){
-//				coefp=(Coef_Elt)g1.coefs_list.elementAt(j);
-//				if (coefp.equals(coef)) {
-//					coef.coef_=GF.sum(coef.getCoef(),coefp.getCoef());
-//					g1.coefs_list.remove(j);
-//				}
-//			}
-//			if (coef.coef_==0) {
-//				g1.coefs_list.remove(i);
-//			} else {
-//				g1.coefs_list.setElementAt(coef,i);
-//			}
-//		}
-//		
-//		if (g1.dataLength>=g2.dataLength){
-//			for(i = 0; i < g2.dataLength ; i++) {			
-//				g1.Buf[i]=int2byte(GF.sum(g1.Buf[i], g2.Buf[i]));				
-//			}	
-//		} else {
-//			for(i = 0; i < g1.dataLength ; i++) {			
-//				g1.Buf[i]=int2byte(GF.sum(g1.Buf[i], g2.Buf[i]));				
-//			}
-//			System.arraycopy(g2.Buf,g1.dataLength,g1.Buf,g1.dataLength,g2.dataLength-g1.dataLength);
-//		}		
-//		return g1;
-//	}
-//
-////--------------------------------------------------------------------	
-//
-//	public NCdatagram NC_minus(NCdatagram g1, NCdatagram g2) throws Exception {
-//		int i,j;
-//
-//		Coef_Elt coef, coefp;
-//
-////		Vector list=(Vector)g1.coefs_list.clone();
-////		Vector list= new Vector(0);
-//		
-//		
-//		Enumeration eg=g2.coefs_list.elements();
-//		while (eg.hasMoreElements()) {
-//			coef=(Coef_Elt) eg.nextElement();
-//			coefp=cfpool.coefclone(coef);
-//			g1.coefs_list.add(coefp);
-//		}
-//		
-//		
-//		for (i=0;i<g1.coefs_list.size();i++) {
-//			coef=(Coef_Elt)g1.coefs_list.elementAt(i);
-//			for (j=i+1;j<g1.coefs_list.size();j++){
-//				coefp=(Coef_Elt)g1.coefs_list.elementAt(j);
-//				if (coefp.equals(coef)) {
-//					coef.coef_=GF.minus(coef.getCoef(),coefp.getCoef());
-//					g1.coefs_list.remove(j);
-//					cfpool.freeCoef(coefp);
-//				}
-//			}
-//			if (coef.coef_==0) {
-//				g1.coefs_list.remove(i);
-//			} else {
-//				g1.coefs_list.setElementAt(coef,i);
-//			}
-//		}
-//		
-//		if (g1.dataLength>=g2.dataLength){
-//			for(i = 0; i < g2.dataLength ; i++) {			
-//				g1.Buf[i]=int2byte(GF.minus(g1.Buf[i], g2.Buf[i]));				
-//			}	
-//		} else {
-//			for(i = 0; i < g1.dataLength ; i++) {			
-//				g1.Buf[i]=int2byte(GF.minus(g1.Buf[i], g2.Buf[i]));				
-//			}
-//			System.arraycopy(g2.Buf,g1.dataLength,g1.Buf,g1.dataLength,g2.dataLength-g1.dataLength);
-//		}		
-//		return g1;
-//	}
+		//			NCdatagram nc=ncpool.get();
+		L=decodedBuf.size();
+		l=(decodedBuf.size() + varList.size());
+		// For encoding we should have received packets 
+		if (l==0) {
+			return null;
+		}
+		// As a First try we do not put any upper bound on the number of coefficient 
+		synchronized(decodingBuf) {
+			int len=(decodingBuf.size() + decodedBuf.size());
+			// len should be larger than 0 unless an Error 
+			if (len ==0) {
+				logger.error("ERROR : LEN ==0 while L!=0");
+			}
+			// choose number of packets to mix, ensure that it is larger than 1
+			order=Math.max(rnd.nextInt(Math.min(MCLU,l)),1);
+			for (int i=0;i<order; i++) {
+				choice=rnd.nextInt(len);
+				// We should insure that coef !=0
+				coef= rnd.nextInt(255-1)+1;				
+				if (choice > (L - 1)) {
+					choice=choice-L;
+					g=(NCdatagram)decodingBuf.elementAt(choice);
+				} else {
+					g=(NCdatagram)decodedBuf.elementAt(choice);
+				}
+				gclone=(NCdatagram) ncpool.clone(g);
+				if (i>0) {					
+					nc= nc.sum(gclone.product(coef),cfpool);
+					ncpool.free(gclone);
+				} else {
+					nc=gclone.product(coef);
+				}	
+			}
+		}
+		return nc;	
+	}
 
 
 //--------------------------------------------------------------------	
 	public synchronized  NCdatagram reduce(NCdatagram g) throws GaloisException, Exception {
 	
-		int i,j;
-		NCdatagram g1,g2,g3;
-		Coef_Elt coef, coef1;
+		NCdatagram g1,g2;
+		Coef_Elt coef;
 		int index;
         
         
-		Enumeration eg=g.coefs_list.elements();
+		Enumeration<Coef_Elt> eg=g.coefs_list.elements();
 		while (eg.hasMoreElements()) {
 			coef=(Coef_Elt) eg.nextElement();
 			index=decodedList.indexOf(coef.getID());
 			if (index!=-1) {
 				g1=(NCdatagram) decodedBuf.elementAt(index);
-				g2=ncpool.NCdatagramclone(g1);
-				g3=ncpool.NCdatagramclone(g);
+				g2=ncpool.clone(g1);
 				g.minus(g2.product(coef.getCoef()),cfpool);
-//				g.validate();
-				g3.minus(g2,cfpool);
-
-				ncpool.freeNCdatagram(g2);
+				ncpool.free(g2);
 			}
 		}
 		return g;					
@@ -595,7 +364,7 @@ public class Ncode extends AsynchronousLayer {
 		Coef_Elt coef;
 		
 		// first detect if new variables exists !
-		Enumeration eg=g.coefs_list.elements();
+		Enumeration<Coef_Elt> eg=g.coefs_list.elements();
 		while (eg.hasMoreElements()) {
 			coef=(Coef_Elt) eg.nextElement();
 			Pkt_ID id=coef.getID(); 
@@ -610,9 +379,8 @@ public class Ncode extends AsynchronousLayer {
 //--------------------------------------------------------------------	
 	public synchronized void genA() throws GaloisException, Exception {
 
-		int k,ind;
 		NCdatagram g;
-		Pkt_ID id,idp;
+		Pkt_ID id;
 		Coef_Elt coef;		
 		// Number of variables
 		int N=varList.size();
@@ -626,10 +394,10 @@ public class Ncode extends AsynchronousLayer {
 		A=new int[M][N];
 		
 		int i=0;
-		Enumeration eg=decodingBuf.elements();
+		Enumeration<NCdatagram> eg=decodingBuf.elements();
 		while(eg.hasMoreElements()) {
 			g=(NCdatagram) eg.nextElement();
-			Enumeration ecoef=g.coefs_list.elements();			
+			Enumeration<Coef_Elt> ecoef=g.coefs_list.elements();			
 			while (ecoef.hasMoreElements()) {
 				coef=(Coef_Elt) ecoef.nextElement();
 				id=coef.getID();
@@ -654,7 +422,6 @@ public class Ncode extends AsynchronousLayer {
 		// dimension of the coefficient matrix after gaussian elimination.
 
 		NCdatagram g,g1,g2;
-		int[] tmp;
 		int k,i,j,n;
 		int pivot;
 
@@ -702,21 +469,10 @@ public class Ncode extends AsynchronousLayer {
 					if (pivot != 1) {
 						// we have to rescale the line by the pivot
 						g=(NCdatagram) decodingBuf.elementAt(k);												
-//						g.line_validate(A[k],N);
-//						g.validate();
 						for(i= k; i < N ; i++) {
 							A[k][i] = GF.divide(A[k][i], pivot);
 						}
-						g.product(GF.divide(1,pivot));
-//						g.line_validate(A[k],N);
-						
-//						for(i=0;i<g.dataLength;i++) {							
-//							g.Buf[i] = int2byte(GF.divide(byte2int(g.Buf[i]),pivot));
-//						}						
-						
-//						g.validate();
-//						g.line_validate(A[k],N);
-
+						g.product(GF.divide(1,pivot));						
 					}
 					// make the value under the pivot equal zero 
 					for(i = k+1; i < M ; i++) {  // Line index
@@ -726,28 +482,12 @@ public class Ncode extends AsynchronousLayer {
 								A[i][j] =  GF.minus(A[i][j], GF.product(p, A[k][j]));
 							}							
 							g1=(NCdatagram) decodingBuf.elementAt(i);
-							g2=ncpool.NCdatagramclone((NCdatagram) decodingBuf.elementAt(k));
+							g2=ncpool.clone((NCdatagram) decodingBuf.elementAt(k));
 							g1.minus(g2.product(p),cfpool);
-//							if (g1.dataLength>=g2.dataLength){
-//								for(j=0;j<g2.dataLength;j++) {
-//									g1.Buf[j] = int2byte(GF.minus(byte2int(g1.Buf[j]),GF.product(A[i][k],byte2int(g2.Buf[j]))));
-//								}
-//							} else {
-//								for(j=0;j<g1.dataLength;j++) {
-//									g1.Buf[j] = int2byte(GF.minus(byte2int(g1.Buf[j]),GF.product(A[i][k],byte2int(g2.Buf[j]))));
-//								}
-//								for(j=g1.dataLength;j<g2.dataLength;j++) {
-//									g1.Buf[j] = int2byte(GF.minus(0,GF.product(A[i][k],byte2int(g2.Buf[j]))));
-//								}
-//							}
-//							A[i][k]=0;
-//							g1.line_validate(A[i],N);
-//							g1.validate();
 						}
 					}
 				}
 			}
-//			line_validate(A[k],M,N);
 		}
 		extractSolved(M,N);
 		return M;
@@ -788,7 +528,7 @@ public class Ncode extends AsynchronousLayer {
 				B[lin1] = B[lin2];
 				B[lin2] = tmp;
 				// Swap element in decodingBuf
-				Object TMP=decodingBuf.elementAt(lin1);
+				NCdatagram TMP=decodingBuf.elementAt(lin1);
 				decodingBuf.set(lin1,decodingBuf.elementAt(lin2));
 				decodingBuf.set(lin2,TMP);
 			}
@@ -796,210 +536,151 @@ public class Ncode extends AsynchronousLayer {
 
 
 //--------------------------------------------------------------------	
-	public synchronized void extractSolved(int M, int N) throws GaloisException, Exception {
+		public synchronized void extractSolved(int M, int N) throws GaloisException, Exception {
 
-		int i,j,k,l,upPivot,cntr;
-		NCdatagram g,g1,g2;
-		Vector list=new Vector(0);
-		Coef_Elt coef;
-		Pkt_ID id,idp;
-		boolean Solved=true;
-//		Vector clone=new Vector(decodingBuf.size());
-		
-//		for (i=0;i<decodingBuf.size();i++) {
-//			clone.add(((NCdatagram)decodingBuf.elementAt(i)).clone());
-//		}
-
-//		int[][] B=new int[M][L];
-		
-//		for (i=0; i<M; i++) {
-//			for (j=0; j<L; j++ ) {
-//				B[i][j]=A[i][j];
-//			}
-//		}
-
-//		decodingBuf.clear();
-		if (M < decodingBuf.size()){
-			for (i=M;i<decodingBuf.size();i++){
-				g=(NCdatagram) decodingBuf.elementAt(i);
-				decodingBuf.remove(i);
+			int i,j,k,l,upPivot;
+			NCdatagram g1,g2;
+			Coef_Elt coef;
+			Pkt_ID id;
+			boolean Solved=true;
+			if (M < decodingBuf.size()){
+				for (i=M;i<decodingBuf.size();i++){
+					//					g=(NCdatagram) decodingBuf.elementAt(i);
+					decodingBuf.remove(i);
+				}
 			}
-		}
-		//Check if one variable have been determined
+			//Check if one variable have been determined
 
-		for (i=M-1;i>=0;i--) {
-        	Solved=true;
-        	// Prepare the NCdatagram
-        	g1=(NCdatagram)decodingBuf.elementAt(i);
-        	synchronized(g1) {
-    			Enumeration ecoef=g1.coefs_list.elements();
-    			while (ecoef.hasMoreElements()) {
-    				coef=(Coef_Elt) ecoef.nextElement();
-        			cfpool.freeCoef(coef);
-    			}
-//    			g1.coefs_list.removeAllElements();
-    			g1.coefs_list.clear();
+			for (i=M-1;i>=0;i--) {
+				Solved=true;
+				// Prepare the NCdatagram
+				g1=(NCdatagram)decodingBuf.elementAt(i);
+				synchronized(g1) {
+					Enumeration<Coef_Elt> ecoef=g1.coefs_list.elements();
+					while (ecoef.hasMoreElements()) {
+						coef=(Coef_Elt) ecoef.nextElement();
+						cfpool.freeCoef(coef);
+					}
+					g1.coefs_list.clear();
 
-        		id = (Pkt_ID) varList.elementAt(i);        		        		
-        		coef=cfpool.getCoefElt(A[i][i], id.index_);        		        		
-        		coef.setSaddr(id.getSaddr());
-        		g1.coefs_list.put(coef.key(),coef);
-        		for (j=i+1;j<N;j++) {
-        			if (A[i][j]!=0) {        			
-        				Solved=false;
-        				id = (Pkt_ID) varList.elementAt(j);
-        				coef=cfpool.getCoefElt(A[i][j], id.index_);
-        				coef.setSaddr(id.getSaddr());				
-        				g1.coefs_list.put(coef.key(),coef);
-        			}
-        		}
-//        		g1.validate();
-        		if (Solved) {
-    				if (g1.Buf[1]!=32) {
-    					logger.error("OHHHHHHHHHHH ERRRRRRRRORRRR !!");
-    				}    					
-        			// a variable has been solved
-        			// First propagate this info in higher lines (equations)
-        			for (k=i-1;k>=0;k--) {
-        				// make the value up the pivot equal zero
-        				upPivot=A[k][i];
-        				if (upPivot!=0){
-        					for(l = k+1; l < N ; l++) { //Column index
-        						A[k][l] =  GF.minus(A[k][l], GF.product(upPivot, A[i][l]));
-        					}
-        					g2=(NCdatagram)decodingBuf.elementAt(k);
-        					for(l = 0; l < Math.max(g1.dataLength,g2.dataLength) ; l++) { //Column index    						
-        						g2.Buf[l] = int2byte(GF.minus(byte2int(g2.Buf[l]), GF.product(upPivot, byte2int(g1.Buf[l]))));
-        					}
-        				}
-        			}
-        			//
-        			//	Transfer the decoded packet to decodedbuffer;
-//        			g1.validate();
-        		
-        			decodedBuf.add(g1);
-        			if (g1.coefs_list.size() !=1) {
-        				System.out.println("Error in decoded Packet !");
-        			}
-        			ecoef=g1.coefs_list.elements();			
-        			coef=(Coef_Elt) ecoef.nextElement();
-        			decodedList.add(coef.getID());        			
-         			
-        			Message msg = mp.createMessage(g1.Buf,(short)g1.Buf.length);
-        			logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" TO APPLI: "+msg);
-        			super.handleMessage(msg);
-    				//update matrix A
-    				//swap lines
-    				Permut_line(A,M-1,i);
-    				//swap column
-    				Permut_col(A,N-1,i,M);
-    				//remove the variable    				
-    				varList.remove(N-1);
-    				decodingBuf.remove(M-1);
-//    				ncpool.freeNCdatagram(g1);
-    				M--;
-    				N--;
-        		}
-        	}
-        }
-		if (M>N) {
-			logger.fatal("Problem !");	
+					id = (Pkt_ID) varList.elementAt(i);        		        		
+					coef=cfpool.getCoefElt(A[i][i], id.index_); 
+					coef.setnodeID_(id.getID());
+					g1.coefs_list.put(coef.key(),coef);
+					for (j=i+1;j<N;j++) {
+						if (A[i][j]!=0) {        			
+							Solved=false;
+							id = (Pkt_ID) varList.elementAt(j);
+							coef=cfpool.getCoefElt(A[i][j], id.index_);
+							coef.setnodeID_(id.getID());
+							g1.coefs_list.put(coef.key(),coef);
+						}
+					}
+					if (Solved) {
+						// a variable has been solved
+						// First propagate this info in higher lines (equations)
+						for (k=i-1;k>=0;k--) {
+							// make the value up the pivot equal zero
+							upPivot=A[k][i];
+							if (upPivot!=0){
+								for(l = k+1; l < N ; l++) { //Column index
+									A[k][l] =  GF.minus(A[k][l], GF.product(upPivot, A[i][l]));
+								}
+								g2=(NCdatagram)decodingBuf.elementAt(k);
+								for(l = 0; l < Math.max(g1.dataLength,g2.dataLength) ; l++) { //Column index    						
+									g2.Buf[l] = int2byte(GF.minus(byte2int(g2.Buf[l]), GF.product(upPivot, byte2int(g1.Buf[l]))));
+								}
+							}
+						}
+						//
+						//	Transfer the decoded packet to decodedbuffer;
+
+						decodedBuf.add(g1);
+						if (g1.coefs_list.size() !=1) {
+							System.out.println("Error in decoded Packet !");
+						}
+						ecoef=g1.coefs_list.elements();			
+						coef=(Coef_Elt) ecoef.nextElement();
+						decodedList.add(coef.getID());        			
+
+						Message msg = mp.createMessage(g1.Buf,(short)g1.Buf.length);
+						logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" TO APPLI: "+msg);
+						super.handleMessage(msg);
+						//update matrix A
+						//swap lines
+						Permut_line(A,M-1,i);
+						//swap column
+						Permut_col(A,N-1,i,M);
+						//remove the variable    				
+						varList.remove(N-1);
+						decodingBuf.remove(M-1);
+						//	    				ncpool.freeNCdatagram(g1);
+						M--;
+						N--;
+					}
+				}
+			}
+			if (M>N) {
+				logger.fatal("Problem !");	
+			}
+
 		}
- 		
-	}
 
 
 
 
 //--------------------------------------------------------------------	
-	public void decode(NCdatagram g) {
-		
-		// received packet validity check
-		int tmpNumCoef=g.coefs_list.size();
-//		g.validate();
-		NCdatagram g1=ncpool.NCdatagramclone(g);
-		recv_cntr++;
-		try{
-			g = reduce(g);
-		}
-		catch(Exception ev) {
-			logger.error("NetCode_Module: insert: reduce " + ev);
-		}
-//		g.validate();
-		
-		if(g.coefs_list.size() == 0) {
-			if (simulMode) {
-				logger.info("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF: "+tmpNumCoef+"ACT: Useless packet!!!");				
-			} else {
-				logger.info("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF: "+tmpNumCoef+"ACT: Useless packet!!!");
-			}
-			
-//			System.out.println("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF:"+tmpNumCoef+"ACT: Useless packet!!!");
-			return;
-		}
-//		synchronized(decodingBuf) {
-			decodingBuf.insertElementAt(ncpool.NCdatagramclone(g),0);
-//		}
+		public void decode(NCdatagram g) {
 
-		try{
-			update_varList(g);
-		}
-		catch(Exception e1) {
-			System.err.println("NetCode_Module: insert: update_map_list " + e1);
-		}
-		try{
+			// received packet validity check
+			int tmpNumCoef=g.coefs_list.size();
+			recv_cntr++;
+			try{
+				g = reduce(g);
+			}
+			catch(Exception ev) {
+				logger.error("NetCode_Module: insert: reduce " + ev);
+			}
+
+			if(g.coefs_list.size() == 0) {
+				if (simulMode) {
+					logger.info("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF: "+tmpNumCoef+"ACT: Useless packet!!!");				
+				} else {
+					logger.info("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF: "+tmpNumCoef+"ACT: Useless packet!!!");
+				}
+
+				return;
+			}
+			decodingBuf.insertElementAt(ncpool.clone(g),0);
+			try{
+				update_varList(g);
+			}
+			catch(Exception e1) {
+				System.err.println("NetCode_Module: insert: update_map_list " + e1);
+			}
 			// M: number of equations
 			int M = decodingBuf.size();
 			// N: number of variables
 			int N = varList.size();
-			if (M>N) {
-				logger.fatal("Problem !");	
-			}
-			if (A !=null) {
-				int[][] B=(int[][]) A.clone();
-				for (int i=0; i< M-1; i++) {
-					B[i]=(int[]) A[i].clone();
-				}
-			} else {
-				int[][] B=null;
-			}
-			
-			genA();
-
-			try {
-				int[][] B1;
-				if (A !=null) {
-					B1=(int[][]) A.clone();
-					for (int i=0; i< M; i++) {
-						B1[i]=(int[]) A[i].clone();
-					}
-				} else {
-					B1=null;
-				}
-
-			// L: column length (Number of variables+size of payload)
-//			L = N + MDU;
+			try{
+				if (M>N) {
+					logger.fatal("Problem !");	
+				}		
+				genA();
+				// L: column length (Number of variables+size of payload)
+				//			L = N + MDU;
 
 				logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" STATUS: B "+M+" "+N);			
 				M = GausElim(M, N);
-				B1=B1;
-			} catch(Exception e3) {
-				logger.error("NetCode_Module: decode : GausElim" + e3);
-			}
-			if (M>N) {
-				logger.error("Problem !");	
-			}
-			logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" STATUS: A "+decodingBuf.size()+" "+varList.size());
-			//		decodable();
-		}
-		catch(GaloisException e) {
-			System.err.println("NetCode_Module: insert: decode" + e);
-		}
-		catch(Exception e3) {
-			System.err.println("NetCode_Module: insert: decode " + e3);
+				if (M>N) {
+					logger.error("Problem !");	
+				}
+				logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" STATUS: A "+decodingBuf.size()+" "+varList.size());
+		} catch(Exception e3) {
+			logger.error("NetCode_Module: decode : GausElim" + e3);
 		}
 
-	}
+}
 
 
 
