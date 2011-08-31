@@ -5,11 +5,11 @@ import java.util.Vector;
 
 public class NCdatagramPool {
 
-	private Vector NCdatagrams;
-	CoefEltPool cfpool;
+	protected Vector NCdatagrams;
+	protected CoefEltPool cfpool;
 
 	public NCdatagramPool(CoefEltPool cfpool) {
-		NCdatagrams= new Vector(Globals.pool);
+		NCdatagrams= new Vector(NCGlobals.pool);
 		this.cfpool=cfpool;
 	}
 
@@ -43,7 +43,7 @@ public class NCdatagramPool {
      * @throws IllegalArgumentException
      */
 
-    public synchronized void freeNCdatagram(NCdatagram nc){
+    public synchronized void free(NCdatagram nc){
 		  if (nc == null){
 			  throw new IllegalArgumentException("error: the msg is null");
 		  }
@@ -52,7 +52,7 @@ public class NCdatagramPool {
 	  }
 
 //	  public synchronized NCdatagram getNCdatagram() {
-	  public NCdatagram getNCdatagram() {
+	  public NCdatagram get() {
 		  if (!NCdatagrams.isEmpty()) {
 			  NCdatagram nc = (NCdatagram)NCdatagrams.elementAt(0);
 			  NCdatagrams.removeElementAt(0);
@@ -63,11 +63,11 @@ public class NCdatagramPool {
 		  }
 	  }    	
 	  
-	  public NCdatagram NCdatagramclone(NCdatagram nc) { {		
+	  public NCdatagram clone(NCdatagram nc) { {		
 		  int i;
 		  Coef_Elt coef,coefp;
 
-		  NCdatagram clone=getNCdatagram();
+		  NCdatagram clone=get();
 		  clone.setIndex(nc.getIndex());
 		  clone.setLength(nc.getLength());
 			if (clone.Buf.length<nc.getLength()) {

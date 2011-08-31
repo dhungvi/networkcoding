@@ -1,20 +1,26 @@
 
 package ch.epfl.lsr.adhoc.routing.ncode.feedback;
 
-import java.net.InetAddress;
-import java.util.Random;
-import java.util.Vector;
+import java.nio.ByteBuffer;
+import java.util.*;
+
+import org.apache.commons.math.optimization.GoalType;
+import org.apache.commons.math.optimization.OptimizationException;
+import org.apache.commons.math.optimization.RealPointValuePair;
+import org.apache.commons.math.optimization.linear.LinearConstraint;
+import org.apache.commons.math.optimization.linear.LinearObjectiveFunction;
+import org.apache.commons.math.optimization.linear.Relationship;
+import org.apache.commons.math.optimization.linear.SimplexSolver;
+import util.bloom.*;
 
 import ch.epfl.lsr.adhoc.routing.ncode.*;
 //import ch.epfl.lsr.adhoc.routing.ncode.NCdatagram;
-import ch.epfl.lsr.adhoc.runtime.AsynchronousLayer;
 import ch.epfl.lsr.adhoc.runtime.FrancRuntime;
 import ch.epfl.lsr.adhoc.runtime.Parameters;
 import ch.epfl.lsr.adhoc.runtime.Message;
 import ch.epfl.lsr.adhoc.runtime.MessagePool;
 import ch.epfl.lsr.adhoc.runtime.SendMessageFailedException;
 import ch.epfl.lsr.adhoc.runtime.ParamDoesNotExistException;
-import ch.epfl.lsr.adhoc.tools.VectorUtils;
 
 
 /**
@@ -41,66 +47,39 @@ import ch.epfl.lsr.adhoc.tools.VectorUtils;
  * @author Kave Salamatian
  * @version 1.0
  */
+@SuppressWarnings("deprecation")
 public class NcodeFB extends Ncode {
 
   private Parameters params;
-  public char msgType;
   public char msgTypeFB;
   /** Used to retransmit a message after a random delay */
-  private DelayedTransmission dt;
-  /** Size of the buffer */
-  private int bufferLength;
-  /** The probability of retransmission (in percent) */
-  private int MDU;	// max data unit
-  private int MCLU;
-  private int HCL;	// Hard Coefficient Limit
-  private int recv_cntr = 0;
-  /** Buffer containing the packet to decode */
-  private Vector decodingBuf;
-  /** Buffer containing the decoded packet */
-  private Vector decodedBuf;
+  private DelayedTransmission dt;  
   
-  private Vector map_list;
-  private int rank;
-  private Random rnd;
-  private GaloisField base;
-  private ExtendedGaloisField GF;
-
-  private short fresh_fwd_factor;
-
-  /**
-   * For previously received messages, a list of their sequence numbers.
-   * The variable sourceNodes contains the corresponding source node ids.
-   */
-  private int [] seqNumbers;
-  /**
-   * For previously received messages, a list of their source node ids.
-   * The variable sourceNodes contains the corresponding sequence numbers.
-   */
-  private long [] sourceNodes;
-
-  /** 
-  	* I changed the random number generation mecanism in order to make
-	* it compatible with the Jeode JVM available for the Sharp Zaurus. 
-	* The common Random object has been replaced with the call to 
-	* Math.random method. Jan 2004 dcavin
-	*
-   * The random number generator used to decide on retransmission 
-  	* private Random rand = new Random();
-   */
+  protected NCFBDatagramPool ncfbpool;
   
   /** The node if of this node. */
   private long myNodeID;
   /** A reference to message pool. */
   public MessagePool mp;
+  public Hashtable<String, FbData> neighbourhood=new Hashtable<String, FbData>();
+  
+  public BloomFilter decodedBF;
+  public BloomFilter variableBF;
+  public static int unreceivedWeight=10;
+  public static int variableWeight=1;
+  public static int capacity=5;
+  // neighbor activity deadline
+  public static int activityDeadline=100000000;
+  public int flag ; 
+  public int recv_beacon=0;
+  public int rejPkt=0;
+
 
   /** Default constructor */
   public NcodeFB(String name, Parameters params){
 	  super(name, params);
 	  this.params = params;
-	  decodedBuf=new Vector(0);
-	  decodingBuf=new Vector(0);
-  }
+   }
 
   /**
    * Initializes the network coding layer.
@@ -115,42 +94,100 @@ public class NcodeFB extends Ncode {
    *
    */
   public void initialize(FrancRuntime runtime) {
-    try {
-      bufferLength = params.getInt("bufferLength");
-    } catch(ParamDoesNotExistException pdnee) {
-      throw new RuntimeException("Error reading configuration value bufferLength: " + pdnee.getMessage());
-    }
-    if(bufferLength < 0)
-      throw new RuntimeException("Configuration variable bufferLength cannot be negative");
-    int delayMax = 0;
-    try {
-      delayMax = params.getInt("delayMax");
-    } catch(ParamDoesNotExistException pdnee) {
-      throw new RuntimeException("Error reading configuration value delayMax: " + pdnee.getMessage());
-    }
-    if(delayMax < 0)
-      throw new RuntimeException("Configuration variable delayMax cannot be negative");
+	  int delayMax = 0;
+		try {
+	      delayMax = params.getInt("delayMax");
+	    } catch(ParamDoesNotExistException pdnee) {
+	      throw new RuntimeException("Error reading configuration value delayMax: " + pdnee.getMessage());
+	    }
+	    if(delayMax < 0)
+	      throw new RuntimeException("Configuration variable delayMax cannot be negative");
 
-    seqNumbers = new int[bufferLength];
-    sourceNodes = new long[bufferLength];
-    this.dt = new DelayedTransmission(this, delayMax);
-    this.myNodeID = runtime.getNodeID();
-    this.mp = runtime.getMessagePool();
-//	public NetCod_Module(int mdu, int mclu, int HCL, int port) throws GaloisException, UnknownHostException {	
+	    NCFBGlobals.nodeID_=runtime.getNodeID();
+	    NCGlobals.nodeID_=runtime.getNodeID();
+	    
+	    this.dt = new DelayedTransmission(this, delayMax);
+	    this.myNodeID = runtime.getNodeID();
+	    this.mp = runtime.getMessagePool();
+	    this.cfpool=new CoefEltPool();
+		this.ncfbpool=new NCFBDatagramPool(cfpool);
+		GF = NCFBGlobals.GF;
+		varList=new Vector<Pkt_ID>();
+		decodedList= new Vector<Pkt_ID>();
+		decodedBF=new BloomFilter(320, 5, 1);		
+		byte[] nID = ByteBuffer.allocate(8).putLong(runtime.getNodeID()).array();
+//		decodedBF.setSalt(nID);
+		variableBF=new BloomFilter(320, 5, 1);		
+		nID[0]=(byte) (nID[0]+1);
+//		variableBF.setSalt(nID);		
+		rank = 0;
+	    try {
+	    	NCFBGlobals.MaxBufLength=params.getInt("MaximumDataUnit");
+	    } catch(ParamDoesNotExistException pdnee) {
+	        throw new RuntimeException("Error reading configuration value MDU: " + pdnee.getMessage());
+	    }
+
+	    try {
+	        MCLU = params.getInt("MaximumCLU");
+	    } catch(ParamDoesNotExistException pdnee) {
+	        throw new RuntimeException("Error reading configuration value MCLU: " + pdnee.getMessage());
+	    }
+	    try {
+	        capacity = params.getInt("Capacity");
+	    } catch(ParamDoesNotExistException pdnee) {
+	        throw new RuntimeException("Error reading configuration value capacity: " + pdnee.getMessage());
+	    }
+	    try {
+	        unreceivedWeight = params.getInt("UnreceivedWeight");
+	    } catch(ParamDoesNotExistException pdnee) {
+	        throw new RuntimeException("Error reading configuration value UnreceivedWeight: " + pdnee.getMessage());
+	    }
+	    try {
+	        variableWeight = params.getInt("VariableWeight");
+	    } catch(ParamDoesNotExistException pdnee) {
+	        throw new RuntimeException("Error reading configuration value UnreceivedWeight: " + pdnee.getMessage());
+	    }
+	    try {
+	        activityDeadline = params.getInt("ActivityDeadline");
+	    } catch(ParamDoesNotExistException pdnee) {
+	        throw new RuntimeException("Error reading configuration value ActivityDeadline: " + pdnee.getMessage());
+	    }
+	    
+
+	    
+	    String msgName = null;
+		try {
+			msgName = params.getString("msgType");
+		} catch(ParamDoesNotExistException pdnee) {
+			pdnee.printStackTrace();
+			throw new RuntimeException("Could not read configuration parameter 'msgType' " +
+									   "for NCode layer: " + pdnee.getMessage());
+		}
+		if(msgName == null) {
+			throw new RuntimeException("Could not read configuration parameter 'msgType' " +
+									   "for NCode layer");
+		}
+		try {
+			msgType = mp.getMessageType(msgName);
+		} catch(Exception ex) {
+			throw new RuntimeException("Message type '" + msgName + "' not found");
+		}
+
+		rnd = new Random(System.currentTimeMillis());
+		PktIndex=0;
+		logger=NCFBGlobals.logger;
+	  
+
+  }
+  
+  public void NetCod_Module(int mdu, int mclu, int HCL, int port) throws GaloisException {	
 		try {
 		base = new GaloisField(2);
 		GF = new ExtendedGaloisField(base,'a',8);
 		} catch (GaloisException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	map_list = new Vector();
 	rank = 0;
-    try {
-        MDU = params.getInt("MaximumDataUnit");
-    } catch(ParamDoesNotExistException pdnee) {
-        throw new RuntimeException("Error reading configuration value MDU: " + pdnee.getMessage());
-    }
 
     try {
         MCLU = params.getInt("MaximumCLU");
@@ -222,136 +259,594 @@ public class NcodeFB extends Ncode {
    * @param msg The message to handle
    */
   protected void handleMessage(Message msg){
-	
-    int sequenceNumber = msg.getSequenceNumber();
-    long dstNode = msg.getDstNode();
-    int ttl = msg.getTTL();
-    int index = 0,s;
-    boolean found = false;
-    
-    
-	if(msg == null) {
-		System.out.println("> # message is null");
-		return;
-	}	
-	if(msg.getType() == msgType) {
-//		NCdatagram nc = ((NCodeMessage)msg).getNCdatagram();
-//		recv(nc);
-		mp.freeMessage(msg);
-		return;
-	}
-	if (msg.getType() == msgTypeFB){
-		if (msg.getSrcNode()==myNodeID) {
-			mp.freeMessage(msg);
-			return;
-		} else {
-			System.out.println("Feedack Sent "+myNodeID);
-			FeedbackData fbdata=((NCodeFBMessage)msg).getFbdata();
-			if (fbdata.decoded_list.size()==0) {
-				s=Math.max(10,decodedBuf.size()+decodingBuf.size());
-			} else {
-				s=(fbdata.NumbVar-fbdata.NumbEq);
-			}
-			for (int i=0;i<s;i++){
-				  if (decodingBuf.size() + decodedBuf.size() > 0){
-						Vector vectId=new Vector();
-//						Coef_Elt coef;
+	  if(msg == null) {
+		  System.out.println("> # message is null");
+		  return;
+	  }	
+	  if (msg.getSrcNode()==myNodeID) {
+		  // Loopback !
+		  return;
+	  }
+	  if(msg.getType() == msgType) {
+		  // It is NCDATAGRAMfb message
+		  int len=((NCodeFBMessage)msg).getInBuf(inBuf);
+		  NCFBdatagram ncfb=ncfbpool.getNCFBdatagram();
+		  ncfb.setNodeID(msg.getSrcNode());
+		  try {
+			  if (ncfb.unserialize(inBuf,cfpool)>0) {
+				  logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" RCVFROM: "+msg.getSrcNode()+" IND: "+ncfb.getIndex()+" #COEF: "+ncfb.coefs_list.size());
+				  if (!neighbourhood.containsKey(msg.getSrcNode())) {
+					  neighbourhood.put(String.valueOf(msg.getSrcNode()), ncfb.fbData);
+				  } else {
+					  neighbourhood.remove(String.valueOf(msg.getSrcNode()));
+					  neighbourhood.put(String.valueOf(msg.getSrcNode()), ncfb.fbData);
 				  }
+				  if (ncfb.dataLength==0) {
+					  // a beacon received
+					  recv_beacon++;
+				  } else {
+					  // a datapacket received
+					  recvPkt++;
+					  decode(ncfb);
+				  }
+			  } else {
+				  //Nothing to do !!!
+			  }
+
+		  } catch(RuntimeException e) {
+			  //	 Exception in decoding the packet
+			  // Should not happen but seems to happen because of fragmentation !!!
+			  //  				return 0;
+			  logger.debug("Fragmentation happened !!");
+		  }
+		  mp.freeMessage(msg);		// What to do with processes NCdatagram ?
+	  } else {
+		  //		logger.error("Unknown message received !");
+		  super.handleMessage(msg);
+	  }
+  }
+
+   public int sendMessage(Message msg) throws SendMessageFailedException {		
+			Coef_Elt coef;
+			NCFBdatagram tmpNCFBdatagram = (NCFBdatagram) ncfbpool.getNCFBdatagram();
+			if (msg.getType()==5) {
+				if(msg.getTTL() <= 0) return 0;	
+		  		msg.setNextHop(0);
+		  		return super.sendMessage(msg);
+			} else {
+				logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" APPLI: IN "+msg); 					
+				int l=msg.getByteArray(tmpNCFBdatagram.Buf);
+				tmpNCFBdatagram.setLength(l);
+				tmpNCFBdatagram.setDecoded();
+				tmpNCFBdatagram.setIndex(PktIndex);
+				coef=cfpool.getCoefElt(1,PktIndex++);
+				tmpNCFBdatagram.coefs_list.put(coef.key(),coef);
+				decodedBuf.add(tmpNCFBdatagram);
+				decodedList.add(coef.getID());
+//				decodedBF.add(coef.getID().toString());
+				mp.freeMessage(msg);
+			} 
+			return 1;
+		}
+
+   
+   public void generateEncoded() { 
+	   NCFBdatagram tmpEncDatagram;
+	   try{
+		   // IT MEANS THAT YOU ARE IN A DEGRADED CHANNEL !!!!!
+		   if (!decodedBuf.isEmpty()) {
+			   tmpEncDatagram=encode();
+			   synchronized(tmpEncDatagram) {
+				   decodedBF.clear(); 
+				   byte[] nID = ByteBuffer.allocate(8).putLong(NCFBGlobals.nodeID_).array();
+				   //				decodedBF.setSalt(nID);
+				   //				decodedBF.add(new Key(decodedList.elementAt(0).toString().getBytes()));
+				   //				if (!decodedBF.contains(decodedList.elementAt(0).toString())){
+				   //					int i=1;
+				   //					i++;
+				   //				}
+				   for (int i=0;i<decodedList.size();decodedBF.add(new Key(decodedList.elementAt(i++).toString().getBytes())));
+				   variableBF.clear();
+				   nID[0]=(byte) (nID[0]+1);
+				   //				variableBF.setSalt(nID);
+				   for (int i=0;i<varList.size();variableBF.add(new Key(varList.elementAt(i++).toString().getBytes())));
+				   tmpEncDatagram.fbData.setData(rank, varList.size(), decodedList.size(), capacity-varList.size(), decodedBF, variableBF);
+				   if (tmpEncDatagram!= null && !tmpEncDatagram.isNull()) {
+					   tmpEncDatagram.setIndex(PktIndex++);
+					   int len=tmpEncDatagram.serialize(encBuf);					
+					   NCodeFBMessage tm = (NCodeFBMessage)mp.getMessage(msgType);
+					   tm.setOutbuf(encBuf,len);
+					   tm.setDstNode(0);
+					   tm.setTTL(1);
+					   logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" SEND: E "+" IND: "+tmpEncDatagram.getIndex()+" #COEF: "+tmpEncDatagram.coefs_list.size()); 					
+					   send(tm);
+					   sendPkt++;
+					   //					 	Should we free the tmpEncDatagram ! to check if send(tm) could be made synchronized ! 	  
+					   ncfbpool.freeNCFBdatagram(tmpEncDatagram);
+				   }
+			   }
+		   }
+	   }
+	   catch(GaloisException e) {
+		   logger.error("NetCod_Module: generate Encoded: " + e);
+	   } catch (SendMessageFailedException e) {
+		   // TODO Auto-generated catch block
+		   e.printStackTrace();
+	   }
+   }
+
+   public synchronized NCFBdatagram encode() throws GaloisException {
+	   int i,L=0,l,len, I, index;
+	   Coef_Elt coeff;
+	   int coef_;
+	   NCFBdatagram g, gclone=ncfbpool.getNCFBdatagram(), g1;
+	   Vector<LinearConstraint> constraints =new Vector<LinearConstraint>(10);
+	   int numVar=0;
+	   double[] var, F, X, B;
+	   double [][] AA;
+
+	   NCFBdatagram nc=ncfbpool.getNCFBdatagram();
+	   synchronized(neighbourhood){
+		   synchronized(decodedList) { 
+			   l=(decodedBuf.size() + varList.size());
+			   len=(decodingBuf.size() + decodedBuf.size());
+			   L=decodedBuf.size();
+			   AA=new double[neighbourhood.size()][l];
+			   B= new double[neighbourhood.size()];
+			   F= new double[l];
+			   X= new double[l];
+			   for(i=0;i<l;X[i]=0,F[i++]=0);
+			   if (!neighbourhood.isEmpty()) {
+				   Enumeration<FbData> e=neighbourhood.elements();
+				   FbData nfb;
+				   index=0;
+				   while(e.hasMoreElements()){
+					   nfb=(FbData)e.nextElement();
+					   B[index]=nfb.capacity;
+					   if (nfb.active){
+						   if (System.currentTimeMillis()-nfb.time>activityDeadline ) {
+							   nfb.disactivate();
+						   } else { 
+							   //first loop in all received messages.
+							   for (i=0;i<L;i++) {
+								   if (!nfb.bfdecoded.membershipTest(new Key(decodedList.elementAt(i).toString().getBytes()))){
+									   if (nfb.bfvariable.membershipTest(new Key(decodedList.elementAt(i).toString().getBytes()))){
+										   F[i]=F[i]+variableWeight;
+										   X[i]=1;
+										   constraints.add(new LinearConstraint(X,Relationship.LEQ,1));
+										   X[i]=0;
+									   } else  { 
+										   F[i]=F[i]+ unreceivedWeight;
+										   X[i]=1;
+										   constraints.add(new LinearConstraint(X,Relationship.LEQ,1));
+										   X[i]=0;
+										   AA[index][i]=1;
+									   }
+								   }
+							   }
+						   }
+						   synchronized(decodingBuf){
+							   // now go to undecoded variables
+							   for (i = 0 ; i<len-L ; i++) {	
+								   g = (NCFBdatagram) decodingBuf.elementAt(i);
+								   Enumeration ecoef=g.coefs_list.elements();
+								   numVar=g.coefs_list.size();
+								   while (ecoef.hasMoreElements()) {
+									   coeff=(Coef_Elt) ecoef.nextElement();
+									   synchronized(varList){
+										   I=varList.indexOf(coeff.getID());
+										   if (!nfb.bfdecoded.membershipTest(new Key(varList.elementAt(I).toString().getBytes()))) {
+											   if (nfb.bfvariable.membershipTest(new Key(varList.elementAt(I).toString().getBytes()))) {
+												   F[I+L]=F[I+L]+(double)variableWeight/numVar;
+												   X[I+L]=1;
+												   constraints.add(new LinearConstraint(X,Relationship.LEQ,1));
+												   X[I+L]=0;
+											   } else  { 
+												   X[I+L]=1;
+												   constraints.add(new LinearConstraint(X,Relationship.LEQ,1));
+												   X[I+L]=0;
+												   F[I+L]=F[I+L]+unreceivedWeight/numVar;
+												   AA[index][I+L]=1;
+											   }
+										   }
+									   }
+								   }
+							   }
+						   }
+						   B[index]=(int)nfb.capacity;
+						   constraints.add(new LinearConstraint(AA[index],Relationship.LEQ,B[index]));					   
+						   index++;
+					   }					   
+				   }
+			   }
+			   if (index>0) {
+				   LinearObjectiveFunction lobj = new LinearObjectiveFunction(F,0.0 );
+				   SimplexSolver solver=new SimplexSolver();				   
+				   RealPointValuePair solution;
+				   try {
+					   solution = solver.optimize(lobj, constraints, GoalType.MAXIMIZE, true);
+					   var=solution.getPoint();
+					   boolean first=true;
+					   for (i=0;i<L;i++) {
+						   if (Math.random()<var[i]) {
+							   coef_= rnd.nextInt(255-1)+1;				
+							   g=(NCFBdatagram)decodedBuf.elementAt(i);
+							   gclone=(NCFBdatagram) ncfbpool.clone(g);
+							   if (first) {					
+								   nc=gclone.product(coef_);
+								   first=false;
+							   } else {
+								   nc= nc.sum(gclone.product(coef_),cfpool);
+							   }	
+						   }
+					   }
+					   float[]  score= new float[decodingBuf.size()];
+					   for (i=0;i<decodingBuf.size();i++) {
+						   g=(NCFBdatagram)decodedBuf.elementAt(i);
+						   Enumeration ecoef=g.coefs_list.elements();
+						   numVar=g.coefs_list.size();
+						   while (ecoef.hasMoreElements()) {							   
+							   coeff=(Coef_Elt) ecoef.nextElement();
+							   I=varList.indexOf(coeff.getID());
+							   score[i]=(float)var[L+I]/numVar;
+						   }
+					   }
+					   for (i=0;i<decodingBuf.size();i++) {
+						   if (Math.random()<score[i]) {
+							   coef_= rnd.nextInt(255-1)+1;				
+							   g=(NCFBdatagram)decodingBuf.elementAt(i);
+							   gclone=(NCFBdatagram) ncfbpool.clone(g);
+							   if (first) {					
+								   nc=gclone.product(coef_);
+								   first=false;
+							   } else {
+								   nc= nc.sum(gclone.product(coef_),cfpool);
+							   }	
+						   }
+					   }
+
+				   } catch (OptimizationException e1) {
+					   e1.printStackTrace();
+				   }						   
+			   }
+		   }
+	   }
+	   return nc;	
+
+   }
+	
+
+	public synchronized void extractSolved(int M, int N) throws GaloisException, Exception {
+
+		int i,j,k,l,upPivot;
+		NCFBdatagram g1,g2;
+		Coef_Elt coef;
+		Pkt_ID id;
+		boolean Solved=true;
+		if (M < decodingBuf.size()){
+			for (i=M;i<decodingBuf.size();i++){
+				decodingBuf.remove(i);
 			}
 		}
-	}
-//						NCdatagram g =encode();						
-//						if (g!=null){
-//							for (int j=0; j < g.coefs_list.size();j++) {
-//								coef=(Coef_Elt)g.coefs_list.elementAt(j);
-//								vectId.add(coef.id_);
-//							}
-////							Vector v=VectorUtils.difference(g.coefs_list,vectId);
-////							if (v.size() > 0){
-//								NCodeMessage tm = (NCodeMessage)mp.getMessage(msgType);
-//								tm.setNCdatagram(g);
-//								tm.setDstNode(0);
-//								tm.setTTL(1);
-//								try {
-//									send(tm);
-//								} catch (SendMessageFailedException e) {
-//									e.printStackTrace();
-//								}
-//								GlobalIndex.globalIndex++;
-//							}
-//						}
-////					  }
-//					  catch(GaloisException e) {
-//							System.err.println("NetCod_Module: send: " + e);
-//					  }
-//				  }
-//			}
-//			mp.freeMessage(msg);
-//			return;			
-//		}
-//	}
-//	else {
-// 		NCdatagram freshData = new NCdatagram(MDU,0);
-//		msg.getByteArray(freshData.Buf);
-//		
-//		Coef_Elt coef_elt = new Coef_Elt(1);
-//		coef_elt.length=freshData.Buf.length;
-//		freshData.coefs_list.add(coef_elt);
-//		decodedBuf.add(freshData);
-//
-//		NCodeMessage tm = (NCodeMessage)mp.getMessage(msgType);
-//		tm.setNCdatagram(freshData);
-//		tm.setDstNode(0);
-//		tm.setTTL(1);
-//		try {
-//			send(tm);
-//		} catch (SendMessageFailedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-// 		GlobalIndex.globalIndex++;
-//		mp.freeMessage(msg);
-//		return;
-//	}
-  }
-  
+		//Check if one variable have been determined
 
-	public void sendFbData() throws SendMessageFailedException {
-		FeedbackData fbdata=new FeedbackData();
-		int i, s=decodedBuf.size();
-		
-		Pkt_ID id;
-		NCdatagram nc;
-		Coef_Elt coef;
-		
-		for (i=0; i < s; i++ ) {
-//			id=new Pkt_ID(PktIndex++);
-			nc=(NCdatagram) decodedBuf.elementAt(i);
-//			coef=(Coef_Elt) nc.coefs_list.elementAt(0);
-//			id=coef.id_;
-//			fbdata.decoded_list.add(id);
-		}
-		fbdata.NumbEq=decodingBuf.size();
-		fbdata.NumbVar=map_list.size();
-		NCodeFBMessage msg=new NCodeFBMessage(msgTypeFB);
-		msg.setFbdata(fbdata);
-		send(msg);
+		for (i=M-1;i>=0;i--) {
+        	Solved=true;
+        	// Prepare the NCdatagram
+        	g1=(NCFBdatagram)decodingBuf.elementAt(i);
+        	synchronized(g1) {
+    			Enumeration<Coef_Elt> ecoef=g1.coefs_list.elements();
+    			while (ecoef.hasMoreElements()) {
+    				coef=(Coef_Elt) ecoef.nextElement();
+        			cfpool.freeCoef(coef);
+    			}
+    			g1.coefs_list.clear();
 
-	}
-
-
-//--------------------------------------------------------------------
-	public byte int2byte(int val) {
-		return (byte) val;
-	}
-
-	public int byte2int(byte val){
-		int i=val;
-		if (i <0 ) {
-			i=i+256;
-			return i;
-		} else {
-			return i;
+        		id = (Pkt_ID) varList.elementAt(i);        		        		
+        		coef=cfpool.getCoefElt(A[i][i], id.index_); 
+        		coef.setnodeID_(id.getID());
+        		g1.coefs_list.put(coef.key(),coef);
+        		for (j=i+1;j<N;j++) {
+        			if (A[i][j]!=0) {        			
+        				Solved=false;
+        				id = (Pkt_ID) varList.elementAt(j);
+        				coef=cfpool.getCoefElt(A[i][j], id.index_);
+        				coef.setnodeID_(id.getID());		
+        				g1.coefs_list.put(coef.key(),coef);
+        			}
+        		}
+        		if (Solved) {
+    				if (g1.Buf[1]!=32) {
+    					logger.error("OHHHHHHHHHHH ERRRRRRRRORRRR !!");
+    				}    					
+        			// a variable has been solved
+        			// First propagate this info in higher lines (equations)
+        			for (k=i-1;k>=0;k--) {
+        				// make the value up the pivot equal zero
+        				upPivot=A[k][i];
+        				if (upPivot!=0){
+        					for(l = k+1; l < N ; l++) { //Column index
+        						A[k][l] =  GF.minus(A[k][l], GF.product(upPivot, A[i][l]));
+        					}
+        					g2=(NCFBdatagram)decodingBuf.elementAt(k);
+        					for(l = 0; l < Math.max(g1.dataLength,g2.dataLength) ; l++) { //Column index    						
+        						g2.Buf[l] = int2byte(GF.minus(byte2int(g2.Buf[l]), GF.product(upPivot, byte2int(g1.Buf[l]))));
+        					}
+        				}
+        			}
+        			//
+        			//	Transfer the decoded packet to decodedbuffer;        		
+        			decodedBuf.add(g1);
+        			if (g1.coefs_list.size() !=1) {
+        				System.out.println("Error in decoded Packet !");
+        			}
+        			ecoef=g1.coefs_list.elements();			
+        			coef=(Coef_Elt) ecoef.nextElement();
+        			decodedList.add(coef.getID());        			
+         			
+        			Message msg = mp.createMessage(g1.Buf,(short)g1.Buf.length);
+        			logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" TO APPLI: "+msg);
+        			super.handleMessage(msg);
+    				//update matrix A
+    				//swap lines
+    				Permut_line(A,M-1,i);
+    				//swap column
+    				Permut_col(A,N-1,i,M);
+    				//remove the variable    				
+    				varList.remove(N-1);
+    				decodingBuf.remove(M-1);
+    				M--;
+    				N--;
+        		}
+        	}
+        }
+		if (M>N) {
+			logger.fatal("Problem !");	
 		}
 	}
+		
+		public synchronized int GausElim(int M, int N) throws GaloisException, Exception {
+
+			// Input:
+			// M: Number of equations
+			// N: Number of variables
+			// return:
+			// dimension of the coefficient matrix after gaussian elimination.
+
+			NCFBdatagram g,g1,g2;
+			int k,i,j,n;
+			int pivot;
+
+			rank = 0;
+
+			// Main Loop : # of iteration = # of lines
+			for(k = 0; k < M ; k++) { 
+				// Check if the pivot is zero and a swap is needed			
+				boolean SWAP = false;
+				// first check if we can exchange with a column larger than k
+				while(!SWAP) { 
+					if(A[k][k] == 0) {
+						// if the pivot is zero we should exchange line or column order !
+						for(n = k+1 ; n < N ; n++){
+							if(A[k][n] != 0) {
+								// we have found a column for exchange. Let's swap.
+								// Caution: when swapping column we have to take care of map_list!
+								Permut_col(A, k, n, M);
+								SWAP = true;
+								break;
+							}
+						} 
+						if (!SWAP) {
+							// We have a full zero line = an equation is linearly dependent !
+							// we have to remove it !
+							// we search for a line to exchange with it. Begin with the last line
+							// and reduce matrix size
+							if (k==(M-1)) {
+								// we have reached the last line swapping is useless 
+								SWAP=true;
+								// This line should be removed
+								M=M-1;
+								break;
+							} else { 
+								M=M-1;
+								Permut_line(A,M,k);
+							}
+						}
+					} 
+					if (k<M) {
+						// the pivot is not zero. Let's do the operation
+						SWAP=true;
+						rank++;
+						pivot = A[k][k];
+						if (pivot != 1) {
+							// we have to rescale the line by the pivot
+							g=(NCFBdatagram) decodingBuf.elementAt(k);												
+//							g.line_validate(A[k],N);
+//							g.validate();
+							for(i= k; i < N ; i++) {
+								A[k][i] = GF.divide(A[k][i], pivot);
+							}
+							g.product(GF.divide(1,pivot));
+
+						}
+						// make the value under the pivot equal zero 
+						for(i = k+1; i < M ; i++) {  // Line index
+							if (A[i][k]!=0) {
+								int p=A[i][k];
+								for(j = k; j < N ; j++) { //Column index
+									A[i][j] =  GF.minus(A[i][j], GF.product(p, A[k][j]));
+								}							
+								g1=(NCFBdatagram) decodingBuf.elementAt(i);
+								g2=ncfbpool.clone((NCFBdatagram) decodingBuf.elementAt(k));
+								g1.minus(g2.product(p),cfpool);
+							}
+						}
+					}
+				}
+//				line_validate(A[k],M,N);
+			}
+			extractSolved(M,N);
+			return M;
+		}
+
+
+		//--------------------------------------------------------------------	
+		public void decode(NCFBdatagram g) {
+			// received packet validity check
+			int tmpNumCoef=g.coefs_list.size();
+			try{
+				g = reduce(g);
+			}
+			catch(Exception ev) {
+				logger.error("NetCode_Module: insert: reduce " + ev);
+			}
+			//			g.validate();
+
+			if (g.coefs_list.size() == 0) {
+				if (g.dataLength>0) {
+					// this is wrong packet 
+					if (simulMode) {
+						logger.info("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF: "+tmpNumCoef+"ACT: Useless packet!!!");				
+					} else {
+						logger.info("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF: "+tmpNumCoef+"ACT: Useless packet!!!");
+					}
+					System.out.println("At time: "+System.currentTimeMillis()+" NODE ID: "+myNodeID+" INDEX: "+ g.getIndex()+" #COEF:"+tmpNumCoef+"ACT: Useless packet!!!");
+				} // else this is a beacon only packet 
+				return;
+			}
+			decodingBuf.insertElementAt(ncfbpool.clone(g),0);
+
+			try {
+				if (update_varList(g)) {
+					try{
+						// M: number of equations
+						int M = decodingBuf.size();
+						// N: number of variables
+						int N = varList.size();
+						if (M>N) {
+							logger.fatal("Problem !");	
+						}
+						genA();
+						// L: column length (Number of variables+size of payload)
+						//				L = N + MDU;
+
+						logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" STATUS: B "+M+" "+N);			
+						M = GausElim(M, N); 
+						if (M>N) {
+							logger.error("Problem !");	
+						}
+						logger.info("NID: "+myNodeID+" TIME: "+System.currentTimeMillis()%1000000+" STATUS: A "+decodingBuf.size()+" "+varList.size());
+						//		decodable(); 
+					}catch(Exception e1) {
+						logger.error("NetCode_Module: decode : GausElim" + e1);
+					}
+				}else {
+					rejPkt++;
+				}
+			} catch (Exception e) {
+				System.err.println("NetCode_Module: insert: update_map_list " + e);
+			}
+		}
+
+		public synchronized  NCFBdatagram reduce(NCFBdatagram g) throws GaloisException, Exception {
+			
+			NCFBdatagram g1,g2;
+			Coef_Elt coef;
+			int index;
+	        
+	        
+			Enumeration<Coef_Elt> eg=g.coefs_list.elements();
+			while (eg.hasMoreElements()) {
+				coef=(Coef_Elt) eg.nextElement();
+				index=decodedList.indexOf(coef.getID());
+				if (index!=-1) {
+					g1=(NCFBdatagram) decodedBuf.elementAt(index);
+					g2=ncfbpool.clone(g1);
+					g.minus(g2.product(coef.getCoef()),cfpool);
+					ncfbpool.freeNCFBdatagram(g2);
+				}
+			}
+			return g;					
+		}
+
+		public synchronized void genA() throws GaloisException, Exception {
+
+			NCFBdatagram g;
+			Pkt_ID id;
+			Coef_Elt coef;		
+			// Number of variables
+			int N=varList.size();
+			// Number of equations
+			int M=decodingBuf.size();
+			int index=0;
+			if (M>N) {
+				logger.error("Problem !");
+			}
+			
+			A=new int[M][N];
+			
+			int i=0;
+			Enumeration<NCdatagram> eg=decodingBuf.elements();
+			while(eg.hasMoreElements()) {
+				g=(NCFBdatagram) eg.nextElement();
+				Enumeration<Coef_Elt> ecoef=g.coefs_list.elements();			
+				while (ecoef.hasMoreElements()) {
+					coef=(Coef_Elt) ecoef.nextElement();
+					id=coef.getID();
+					index=varList.indexOf(id);
+					if (index==-1) {
+						System.out.println("ERROR in genA");
+					}
+					A[i][index]=coef.getCoef();
+				}					
+				i++;							
+			}
+		}		
+		
+		public synchronized boolean update_varList(NCFBdatagram g) throws Exception {
+
+			Coef_Elt coef;
+			int newvariables=0;
+			
+			// first detect if new variables exists !
+			Enumeration<Coef_Elt> eg=g.coefs_list.elements();
+			//first check if we have capacity
+			while (eg.hasMoreElements()) {
+				coef=(Coef_Elt) eg.nextElement();
+				Pkt_ID id=coef.getID(); 
+				if (!varList.contains(id)) {
+					newvariables++;
+				}
+			}
+			if (varList.size()+newvariables>capacity) {
+				return false;
+			} else {
+				eg=g.coefs_list.elements();
+				//first check if we have capacity
+				while (eg.hasMoreElements()) {
+					coef=(Coef_Elt) eg.nextElement();
+					Pkt_ID id=coef.getID(); 
+					if (!varList.contains(id)) {
+						varList.add(id);
+//						variableBF.add(new Key(id.toString().getBytes()));						
+					}
+				}
+			}
+			return true;
+		}
+		
+		boolean checkBloomFilter(BloomFilter bf, Vector v){
+			for (int i=0;i<v.size();i++) {
+				if (!bf.membershipTest(new Key(v.elementAt(i).toString().getBytes()))) {
+					return false;
+				}
+			}
+			return true;
+		}
+		
 }
+
+
+
+
+

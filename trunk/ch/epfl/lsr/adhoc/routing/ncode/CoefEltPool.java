@@ -8,7 +8,7 @@ public class CoefEltPool {
     	private Vector coefElts;
 
     	public CoefEltPool() {
-    		coefElts= new Vector(Globals.pool);
+    		coefElts= new Vector(NCGlobals.pool);
     	}
     	
     	/**
@@ -22,12 +22,13 @@ public class CoefEltPool {
 		        Coef_Elt coef = (Coef_Elt)coefElts.elementAt(0);
 		        coef.setCoef(val);
 		        coef.setIndex(index);
-		        try {
-				  coef.saddr=InetAddress.getLocalHost();
-		        }
-		        catch(UnknownHostException e) {
-				  System.err.println(e);
-		        }	
+//		        try {
+//				  coef.saddr=InetAddress.getLocalHost();
+//		        }
+//		        catch(UnknownHostException e) {
+//				  System.err.println(e);
+//		        }
+		        coef.nodeID_=NCGlobals.nodeID_;
 //		        coef.id_=new Pkt_ID(index);
 		        coef.length=0;
 		        return coef;
@@ -58,7 +59,8 @@ public class CoefEltPool {
   		        Coef_Elt coef = (Coef_Elt)coefElts.elementAt(0);
 		        coef.setCoef(val);
 		        coef.setIndex(index);
-	        	coef.saddr=Globals.localAdd;
+//	        	coef.saddr=Globals.localAdd;
+		        coef.nodeID_=NCGlobals.nodeID_;
 		        coef.length=0;
 				coefElts.removeElementAt(0);
 		        return coef;
@@ -71,7 +73,8 @@ public class CoefEltPool {
     	  public synchronized Coef_Elt coefclone(Coef_Elt coef) {
     		  
     		  Coef_Elt clone=getCoefElt(coef.getCoef(),coef.index_);
-    		  clone.saddr=coef.getSaddr();
+//    		  clone.saddr=coef.getSaddr();
+    		  clone.nodeID_=coef.getnodeID();
     		  return clone;
     	  }
     }
