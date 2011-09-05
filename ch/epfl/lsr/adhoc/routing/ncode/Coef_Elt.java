@@ -21,7 +21,7 @@ public class Coef_Elt {
   // Constructors
   // Empty Constructor
   public Coef_Elt (int coef,int index) {
-	  coef_=coef;
+	  coef_=coef ;
 	  index_=index;
 	  nodeID_=NCGlobals.nodeID_;
 //	  saddr=Globals.localAdd;
